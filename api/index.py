@@ -10,6 +10,7 @@ Currently implemented:
   POST /api/login
   POST /api/register
   GET  /api/get_barangays
+  GET  /api/get_posts
 """
 
 import os
@@ -411,6 +412,74 @@ def get_barangays():
     return jsonify({
         "success": True,
         "data": barangays
+    }), 200
+
+
+@app.route("/api/get_posts", methods=["GET", "OPTIONS"])
+def get_posts():
+    if request.method == "OPTIONS":
+        return "", 204
+
+    # Optional: filter by a single post id, e.g. /api/get_posts?id=5
+    post_id_raw = request.args.get("id")
+    post_id = None
+    if post_id_raw:
+        try:
+            post_id = int(post_id_raw)
+        except ValueError:
+            post_id = None
+
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/rpc/get_website_post_details"
+    body = json.dumps({"p_website_post_id": post_id}).encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=body,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            status_code = resp.status
+            response_body = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        try:
+            details = json.loads(error_body)
+        except json.JSONDecodeError:
+            details = error_body
+        return jsonify({
+            "success": False,
+            "message": "Supabase error.",
+            "details": details
+        }), e.code
+    except urllib.error.URLError as e:
+        return jsonify({
+            "success": False,
+            "message": f"Request failed: {e.reason}"
+        }), 500
+
+    if status_code != 200:
+        try:
+            details = json.loads(response_body)
+        except json.JSONDecodeError:
+            details = response_body
+        return jsonify({
+            "success": False,
+            "message": "Supabase error.",
+            "details": details
+        }), status_code
+
+    posts = json.loads(response_body) if response_body else []
+
+    return jsonify({
+        "success": True,
+        "data": posts
     }), 200
 
 
