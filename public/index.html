@@ -506,6 +506,41 @@
 
 
     <!-- ============================================================
+         MODAL: VIEW DOCUMENT
+    ============================================================ -->
+    <div class="sk-modal-overlay" id="viewDocumentModal">
+        <div class="sk-modal sk-modal--lg">
+            <div class="sk-comment-modal__header">
+                <div class="sk-comment-modal__doc-info">
+                    <span class="sk-comment-modal__category" id="viewDocCategory">Document</span>
+                    <h2 class="sk-comment-modal__doc-title" id="viewDocTitle">Document Title</h2>
+                    <p class="sk-comment-modal__doc-meta" id="viewDocMeta"></p>
+                </div>
+                <button class="sk-modal__close sk-modal__close--light" data-close="viewDocumentModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="sk-comment-modal__body" style="padding: 0;">
+                <!-- Shown when a file is available -->
+                <iframe
+                    id="viewDocFrame"
+                    src=""
+                    style="width: 100%; height: 70vh; border: none; display: none;"
+                ></iframe>
+
+                <!-- Shown when no file is attached to this document -->
+                <div id="viewDocEmpty" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-file-alt fa-4x" style="color: #ccc;"></i>
+                    <h4 class="mt-3" style="color: #7f8c8d;">No File Available</h4>
+                    <p style="color: #95a5a6;">This document doesn't have an attached file yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================================
          MODAL: SUCCESS TOAST
     ============================================================ -->
     <div class="sk-toast" id="successToast">
@@ -517,6 +552,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/main.js"></script>
+
 
 </body>
 </html>

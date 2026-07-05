@@ -45,6 +45,12 @@ class ModalController {
             const anyOpen = document.querySelector('.sk-modal-overlay[style*="flex"]');
             if (!anyOpen) document.body.style.overflow = '';
         }
+
+        // Stop the embedded file from continuing to load in the background
+        if (modalId === 'viewDocumentModal') {
+            const frame = document.getElementById('viewDocFrame');
+            if (frame) frame.src = '';
+        }
     }
 
     static closeAll() {
@@ -839,7 +845,7 @@ class NavigationController {
                         <button class="btn-comment" data-doc-id="${doc.id}">
                             <i class="fas fa-comment me-1"></i> Comment
                         </button>
-                        <button class="btn-view" data-file="${doc.fileUrl || ''}">
+                        <button class="btn-view" data-doc-id="${doc.id}" data-file="${doc.fileUrl || ''}">
                             <i class="fas fa-eye me-1"></i> View
                         </button>
                         <button class="btn-download" data-file="${doc.fileUrl || ''}">
@@ -864,9 +870,30 @@ class NavigationController {
 
         document.querySelectorAll('.btn-view').forEach(btn => {
             btn.addEventListener('click', () => {
-                const file = btn.getAttribute('data-file');
-                if (file) window.open(file, '_blank');
-                else alert('No file available for this document.');
+                const docId = parseInt(btn.getAttribute('data-doc-id'));
+                const file  = btn.getAttribute('data-file');
+                const doc   = DOCUMENTS_DATA.find(d => d.id === docId);
+
+                document.getElementById('viewDocCategory').textContent = doc?.category || 'Document';
+                document.getElementById('viewDocTitle').textContent = doc?.title || '';
+                document.getElementById('viewDocMeta').textContent = doc
+                    ? `${doc.barangayName}  ·  Updated ${doc.date}`
+                    : '';
+
+                const frame = document.getElementById('viewDocFrame');
+                const empty = document.getElementById('viewDocEmpty');
+
+                if (file) {
+                    frame.src = file;
+                    frame.style.display = 'block';
+                    empty.style.display = 'none';
+                } else {
+                    frame.src = '';
+                    frame.style.display = 'none';
+                    empty.style.display = 'block';
+                }
+
+                ModalController.open('viewDocumentModal');
             });
         });
 
