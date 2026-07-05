@@ -103,17 +103,6 @@ class AuthController {
             ModalController.open('loginModal');
         });
 
-        document.getElementById('choiceSignInBtn')?.addEventListener('click', () => {
-            ModalController.close('authChoiceModal');
-            ModalController.open('loginModal');
-        });
-
-        document.getElementById('choiceGuestBtn')?.addEventListener('click', () => {
-            ModalController.close('authChoiceModal');
-            CommentController.enterGuestMode();
-            ModalController.open('commentModal');
-        });
-
         document.getElementById('loginForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
             AuthController.handleLogin();
@@ -459,15 +448,14 @@ class CommentController {
             CommentController.enterUserMode();
             ModalController.open('commentModal');
         } else {
-            ModalController.open('authChoiceModal');
+            // Comments now require a verified account -- go straight to Sign In.
+            ModalController.open('loginModal');
         }
     }
 
     static resetComposeArea() {
         const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
         hide('composeUserBanner');
-        hide('composeGuestBanner');
-        hide('guestFields');
         hide('composeCta');
         const textarea = document.getElementById('commentTextarea');
         if (textarea) textarea.value = '';
@@ -483,18 +471,6 @@ class CommentController {
         const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; };
         const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
         show('composeUserBanner');
-        hide('composeGuestBanner');
-        hide('guestFields');
-        hide('composeCta');
-    }
-
-    static enterGuestMode() {
-        commentMode = 'guest';
-        const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; };
-        const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
-        show('composeGuestBanner');
-        hide('composeUserBanner');
-        show('guestFields');
         hide('composeCta');
     }
 
@@ -581,7 +557,7 @@ class CommentController {
         // Must be logged in
         if (!currentUser) {
             ModalController.close('commentModal');
-            ModalController.open('authChoiceModal');
+            ModalController.open('loginModal');
             return;
         }
 
@@ -668,7 +644,7 @@ class CommentController {
                 CommentController.enterUserMode();
             } else {
                 ModalController.close('commentModal');
-                ModalController.open('authChoiceModal');
+                ModalController.open('loginModal');
             }
         });
 

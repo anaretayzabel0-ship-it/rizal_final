@@ -247,52 +247,6 @@
 
 
     <!-- ============================================================
-         MODAL: AUTH CHOICE (shown when unauthenticated user clicks Comment)
-    ============================================================ -->
-    <div class="sk-modal-overlay" id="authChoiceModal">
-        <div class="sk-modal sk-modal--sm">
-            <button class="sk-modal__close" data-close="authChoiceModal">
-                <i class="fas fa-times"></i>
-            </button>
-            <div class="sk-modal__icon-wrap">
-                <i class="fas fa-comment-dots"></i>
-            </div>
-            <h2 class="sk-modal__title">How would you like to comment?</h2>
-            <p class="sk-modal__subtitle">Choose an option to continue leaving a comment.</p>
-
-            <div class="auth-choice-options">
-                <button class="auth-choice-btn auth-choice-btn--primary" id="choiceSignInBtn">
-                    <div class="auth-choice-icon">
-                        <i class="fas fa-user-circle"></i>
-                    </div>
-                    <div class="auth-choice-text">
-                        <span class="auth-choice-label">Sign in or create account</span>
-                        <span class="auth-choice-sub">Comment with your verified profile</span>
-                    </div>
-                    <i class="fas fa-chevron-right auth-choice-arrow"></i>
-                </button>
-
-                <button class="auth-choice-btn auth-choice-btn--outline" id="choiceGuestBtn">
-                    <div class="auth-choice-icon auth-choice-icon--ghost">
-                        <i class="fas fa-user-secret"></i>
-                    </div>
-                    <div class="auth-choice-text">
-                        <span class="auth-choice-label">Continue as guest</span>
-                        <span class="auth-choice-sub">Your name will show as Anonymous</span>
-                    </div>
-                    <i class="fas fa-chevron-right auth-choice-arrow"></i>
-                </button>
-            </div>
-
-            <p class="sk-modal__note">
-                <i class="fas fa-shield-alt me-1"></i>
-                All comments are reviewed before publishing.
-            </p>
-        </div>
-    </div>
-
-
-    <!-- ============================================================
          MODAL: SIGN IN
     ============================================================ -->
     <div class="sk-modal-overlay" id="loginModal">
@@ -524,27 +478,6 @@
                         <div class="sk-compose-user__avatar" id="composeAvatar">MR</div>
                         <span id="composeUserName">Maria Reyes</span>
                         <span class="sk-compose-user__tag">Verified resident</span>
-                    </div>
-
-                    <!-- Anonymous user indicator (shown when guest) -->
-                    <div class="sk-compose-user sk-compose-user--ghost d-none" id="composeGuestBanner">
-                        <i class="fas fa-user-secret me-2"></i>
-                        <span>Commenting as <strong>Anonymous</strong></span>
-                        <button class="sk-link sk-link--sm ms-auto" id="switchToSignInBtn">Sign in instead</button>
-                    </div>
-
-                    <!-- Guest name / email fields (shown for anonymous) -->
-                    <div class="sk-guest-fields d-none" id="guestFields">
-                        <div class="sk-form-row">
-                            <div class="sk-form-group">
-                                <label class="sk-label">Display name <span class="sk-optional">(optional)</span></label>
-                                <input type="text" class="sk-input sk-input--sm" id="guestName" placeholder="e.g. Concerned Resident">
-                            </div>
-                            <div class="sk-form-group">
-                                <label class="sk-label">Email <span class="sk-optional">(optional, not shown publicly)</span></label>
-                                <input type="email" class="sk-input sk-input--sm" id="guestEmail" placeholder="Not shown publicly">
-                            </div>
-                        </div>
                     </div>
 
                     <div class="sk-compose-box">
