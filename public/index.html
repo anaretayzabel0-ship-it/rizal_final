@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SK Federation - Transparent Governance | Rizal, Laguna</title>
+
+    <!-- External Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- ========== HEADER ========== -->
+    <header class="sk-header">
+        <div class="container">
+            <div class="logo-section">
+                <div class="logo-circle">
+                    <img src="images/SK_Logo.png" alt="SK Federation Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <div class="header-text">
+                    <h1>SANGGUNIANG KABATAAN FEDERATION - TRANSPARENT GOVERNANCE</h1>
+                    <p class="subtitle">RIZAL, LAGUNA</p>
+                    <p class="tagline">Access official documents, reports, and submit your feedback</p>
+                </div>
+                <!-- Auth buttons in header -->
+                <div class="header-auth ms-auto">
+                    <button class="btn-auth-outline" id="headerLoginBtn">
+                        <i class="fas fa-sign-in-alt me-1"></i> Sign In
+                    </button>
+                    <button class="btn-auth-solid" id="headerRegisterBtn">
+                        <i class="fas fa-user-plus me-1"></i> Register
+                    </button>
+                    <!-- Shown when logged in -->
+                    <div class="user-pill d-none" id="userPill">
+                        <div class="user-avatar" id="userAvatar">MR</div>
+                        <span id="userDisplayName">Maria</span>
+                        <button class="btn-signout" id="signOutBtn" title="Sign out">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========== NAVIGATION ========== -->
+    <nav class="sk-navbar navbar navbar-expand-lg">
+        <div class="container">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="homeNavLink">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="resolutionsNavLink">Resolutions and Ordinances</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="policyBoardNavLink">Policy Board</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="accomplishmentNavLink">Accomplishment Reports</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="aboutDropdown" role="button" data-bs-toggle="dropdown">
+                            About us ▼
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Mission & Vision</a></li>
+                            <li><a class="dropdown-item" href="#">SK Officials</a></li>
+                            <li><a class="dropdown-item" href="#">Contact Us</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main>
+
+        <!-- HOME PAGE -->
+        <div id="homePage">
+            <section class="hero-section">
+                <div class="hero-content">
+                    <div class="hero-seal">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <h1>MUNICIPALITY OF RIZAL, LAGUNA</h1>
+                    <p class="hero-tagline">Empowering Youth Through Transparent Governance</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- RESOLUTIONS AND ORDINANCES PAGE -->
+        <div id="resolutionsPage" style="display: none;">
+            <div class="page-header">
+                <div class="container">
+                    <h1>SK RESOLUTIONS | ORDINANCES 2026</h1>
+                    <p class="page-subtitle">Official city ordinances and resolutions for youth development</p>
+                </div>
+            </div>
+
+            <div class="content-section">
+                <div class="container">
+                    <div class="resolutions-container">
+
+                        <div class="resolution-card">
+                            <div class="resolution-header">
+                                <h3>CITY ORDINANCE NO. 16, S-2021</h3>
+                                <div class="resolution-date">
+                                    <i class="fas fa-calendar-alt"></i> Monday, 05 February 2025 - 10:29:33 AM
+                                </div>
+                            </div>
+                            <div class="resolution-content">
+                                <p class="resolution-title">"AN ORDINANCE INSTITUTIONALIZING THE 'YOUTH IN AGRICULTURE' PROGRAMS OF THE SANGGUNIANG KABATAAN OF RIZAL, LAGUNA AND FOR SUCH OTHER PURPOSES."</p>
+                                <div class="resolution-author">
+                                    <i class="fas fa-user"></i> <strong>Authored by:</strong> Hon. Yzabel E. Anareta
+                                </div>
+                            </div>
+                            <div class="resolution-actions">
+                                <a href="#" class="resolution-btn view-btn"><i class="fas fa-eye"></i> View</a>
+                                <a href="#" class="resolution-btn download-btn"><i class="fas fa-download"></i> Download</a>
+                            </div>
+                        </div>
+
+                        <div class="resolution-card">
+                            <div class="resolution-header">
+                                <h3>CITY ORDINANCE NO. 23, S-2022</h3>
+                                <div class="resolution-date">
+                                    <i class="fas fa-calendar-alt"></i> Monday, 10 March 2025 - 02:15:00 PM
+                                </div>
+                            </div>
+                            <div class="resolution-content">
+                                <p class="resolution-title">"AN ORDINANCE ESTABLISHING THE SK YOUTH LEADERSHIP SUMMIT AND APPROPRIATING FUNDS THEREOF FOR THE MUNICIPALITY OF RIZAL, LAGUNA."</p>
+                                <div class="resolution-author">
+                                    <i class="fas fa-user"></i> <strong>Authored by:</strong> Hon. Maria C. Santos
+                                </div>
+                            </div>
+                            <div class="resolution-actions">
+                                <a href="#" class="resolution-btn view-btn"><i class="fas fa-eye"></i> View</a>
+                                <a href="#" class="resolution-btn download-btn"><i class="fas fa-download"></i> Download</a>
+                            </div>
+                        </div>
+
+                        <div class="resolution-card">
+                            <div class="resolution-header">
+                                <h3>RESOLUTION NO. 08, S-2023</h3>
+                                <div class="resolution-date">
+                                    <i class="fas fa-calendar-alt"></i> Friday, 20 June 2025 - 09:00:00 AM
+                                </div>
+                            </div>
+                            <div class="resolution-content">
+                                <p class="resolution-title">"A RESOLUTION APPROVING THE ANNUAL BARANGAY YOUTH INVESTMENT PROGRAM (ABYIP) FOR FISCAL YEAR 2026 FOR ALL BARANGAYS IN RIZAL, LAGUNA."</p>
+                                <div class="resolution-author">
+                                    <i class="fas fa-user"></i> <strong>Authored by:</strong> Hon. John David R. Mercado
+                                </div>
+                            </div>
+                            <div class="resolution-actions">
+                                <a href="#" class="resolution-btn view-btn"><i class="fas fa-eye"></i> View</a>
+                                <a href="#" class="resolution-btn download-btn"><i class="fas fa-download"></i> Download</a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- POLICY BOARD PAGE -->
+        <div id="policyBoardPage" style="display: none;">
+           
+
+            <div class="content-section">
+                <div class="container">
+
+                    <div class="memorandum-card">
+                        <h3>
+                            <i class="fas fa-gavel me-2"></i>
+                            IN ADHERENCE TO DEPARTMENT OF THE INTERIOR AND LOCAL GOVERNMENT MEMORANDUM CIRCULAR NO. 2023-068
+                        </h3>
+                        <p>Republic Act (RA) No. 10742 otherwise known as the SK Reform Act of 2015, as amended by RA No. 11768 provides for the powers and functions of the SK. Section 8(i) of which mandates the SK to adopt and implement a policy on full disclosure of all transactions and documents involving public interest.</p>
+                    </div>
+
+                    <div class="filter-section">
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i> Barangay
+                                </label>
+                                <select class="form-select-custom" id="barangayFilter">
+                                    <option value="all">All Barangays</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="fas fa-calendar-alt me-1"></i> Year
+                                </label>
+                                <select class="form-select-custom" id="yearFilter">
+                                    <option value="all">All Years</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-actions">
+                                <button class="btn-featured" id="applyFilterBtn">
+                                    <i class="fas fa-filter me-2"></i>Apply Filter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="documentsContainer"></div>
+
+                    <div id="noResultsMessage" class="text-center py-5" style="display: none;">
+                        <i class="fas fa-file-alt fa-4x" style="color: #ccc;"></i>
+                        <h4 class="mt-3" style="color: #7f8c8d;">No Documents Found</h4>
+                        <p style="color: #95a5a6;">Try adjusting your filters to see more documents.</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="sk-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-copyright">
+                    <p>&copy; 2026 Sangguniang Kabataan Federation - Municipality of Rizal, Laguna. All rights reserved.</p>
+                </div>
+                <div class="footer-links">
+                    <p>Transparency Portal v1.0 | <a href="#">Contact SK Federation</a></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- ============================================================
+         MODAL: AUTH CHOICE (shown when unauthenticated user clicks Comment)
+    ============================================================ -->
+    <div class="sk-modal-overlay" id="authChoiceModal">
+        <div class="sk-modal sk-modal--sm">
+            <button class="sk-modal__close" data-close="authChoiceModal">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="sk-modal__icon-wrap">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <h2 class="sk-modal__title">How would you like to comment?</h2>
+            <p class="sk-modal__subtitle">Choose an option to continue leaving a comment.</p>
+
+            <div class="auth-choice-options">
+                <button class="auth-choice-btn auth-choice-btn--primary" id="choiceSignInBtn">
+                    <div class="auth-choice-icon">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="auth-choice-text">
+                        <span class="auth-choice-label">Sign in or create account</span>
+                        <span class="auth-choice-sub">Comment with your verified profile</span>
+                    </div>
+                    <i class="fas fa-chevron-right auth-choice-arrow"></i>
+                </button>
+
+                <button class="auth-choice-btn auth-choice-btn--outline" id="choiceGuestBtn">
+                    <div class="auth-choice-icon auth-choice-icon--ghost">
+                        <i class="fas fa-user-secret"></i>
+                    </div>
+                    <div class="auth-choice-text">
+                        <span class="auth-choice-label">Continue as guest</span>
+                        <span class="auth-choice-sub">Your name will show as Anonymous</span>
+                    </div>
+                    <i class="fas fa-chevron-right auth-choice-arrow"></i>
+                </button>
+            </div>
+
+            <p class="sk-modal__note">
+                <i class="fas fa-shield-alt me-1"></i>
+                All comments are reviewed before publishing.
+            </p>
+        </div>
+    </div>
+
+
+    <!-- ============================================================
+         MODAL: SIGN IN
+    ============================================================ -->
+    <div class="sk-modal-overlay" id="loginModal">
+        <div class="sk-modal sk-modal--sm">
+            <button class="sk-modal__close" data-close="loginModal">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="sk-modal__header-bar">
+                <div class="sk-modal__icon-wrap">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2 class="sk-modal__title">Sign in to your account</h2>
+                <p class="sk-modal__subtitle">Access the SK Federation transparency portal.</p>
+            </div>
+
+            <form id="loginForm" novalidate>
+                <div class="sk-form-group">
+                    <label class="sk-label">Email address <span class="sk-required">*</span></label>
+                    <div class="sk-input-wrap">
+                        <i class="fas fa-envelope sk-input-icon"></i>
+                        <input type="email" class="sk-input" id="loginEmail" placeholder="you@example.com" required>
+                    </div>
+                    <span class="sk-field-error" id="loginEmailError"></span>
+                </div>
+
+                <div class="sk-form-group">
+                    <label class="sk-label">Password <span class="sk-required">*</span></label>
+                    <div class="sk-input-wrap">
+                        <i class="fas fa-lock sk-input-icon"></i>
+                        <input type="password" class="sk-input sk-input--with-toggle" id="loginPassword" placeholder="Enter your password" required>
+                        <button type="button" class="sk-pw-toggle" data-target="loginPassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <span class="sk-field-error" id="loginPasswordError"></span>
+                </div>
+
+                <div class="sk-form-row-split">
+                    <label class="sk-checkbox-wrap">
+                        <input type="checkbox" id="rememberMe">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="#" class="sk-link sk-link--sm">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="sk-btn-primary w-100 mt-3">
+                    <i class="fas fa-sign-in-alt me-2"></i> Sign In
+                </button>
+            </form>
+
+            <div class="sk-modal__divider"><span>or</span></div>
+
+            <button class="sk-btn-outline w-100" id="goToRegisterBtn">
+                <i class="fas fa-user-plus me-2"></i> Create a new account
+            </button>
+
+            <p class="sk-modal__note mt-3">
+                Only verified barangay residents of Rizal, Laguna may register.
+            </p>
+        </div>
+    </div>
+
+
+    <!-- ============================================================
+         MODAL: REGISTER
+    ============================================================ -->
+    <div class="sk-modal-overlay" id="registerModal">
+        <div class="sk-modal sk-modal--md">
+            <button class="sk-modal__close" data-close="registerModal">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div class="sk-modal__header-bar sk-modal__header-bar--dark">
+                <div class="sk-modal__icon-wrap">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h2 class="sk-modal__title">Create your account</h2>
+                <p class="sk-modal__subtitle">For verified barangay residents only.</p>
+            </div>
+
+            <form id="registerForm" novalidate>
+
+                <!-- Section: Personal Info -->
+                <p class="sk-section-label">Personal Information</p>
+
+                <div class="sk-form-row">
+                    <div class="sk-form-group">
+                        <label class="sk-label">First name <span class="sk-required">*</span></label>
+                        <input type="text" class="sk-input" id="regFirstName" placeholder="e.g. Maria" required>
+                        <span class="sk-field-error" id="regFirstNameError"></span>
+                    </div>
+                    <div class="sk-form-group">
+                        <label class="sk-label">Last name <span class="sk-required">*</span></label>
+                        <input type="text" class="sk-input" id="regLastName" placeholder="e.g. Santos" required>
+                        <span class="sk-field-error" id="regLastNameError"></span>
+                    </div>
+                </div>
+
+                <div class="sk-form-group">
+                    <label class="sk-label">
+                        Middle initial
+                        <span class="sk-optional">(optional)</span>
+                    </label>
+                    <input type="text" class="sk-input" id="regMiddleInitial" placeholder="e.g. D." maxlength="5">
+                </div>
+
+                <div class="sk-form-group">
+                    <label class="sk-label">Email address <span class="sk-required">*</span></label>
+                    <div class="sk-input-wrap">
+                        <i class="fas fa-envelope sk-input-icon"></i>
+                        <input type="email" class="sk-input" id="regEmail" placeholder="you@example.com" required>
+                    </div>
+                    <span class="sk-field-error" id="regEmailError"></span>
+                </div>
+
+                <!-- Section: Address -->
+                <p class="sk-section-label">Barangay Address</p>
+
+                <div class="sk-form-group">
+                    <label class="sk-label">Barangay <span class="sk-required">*</span></label>
+                    <div class="sk-input-wrap sk-input-wrap--select">
+                        <i class="fas fa-map-marker-alt sk-input-icon"></i>
+                        <select class="sk-input sk-select" id="regBarangay" required>
+                            <option value="" disabled selected>Loading barangays...</option>
+                        </select>
+                        <i class="fas fa-chevron-down sk-select-arrow"></i>
+                    </div>
+                    <span class="sk-field-hint">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Only residents of registered barangays in Rizal, Laguna may sign up.
+                    </span>
+                    <span class="sk-field-error" id="regBarangayError"></span>
+                </div>
+
+                <!-- Section: Security -->
+                <p class="sk-section-label">Security</p>
+
+                <div class="sk-form-group">
+                    <label class="sk-label">Password <span class="sk-required">*</span></label>
+                    <div class="sk-input-wrap">
+                        <i class="fas fa-lock sk-input-icon"></i>
+                        <input type="password" class="sk-input sk-input--with-toggle" id="regPassword" placeholder="Min. 8 characters" required>
+                        <button type="button" class="sk-pw-toggle" data-target="regPassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <!-- Password strength bar -->
+                    <div class="sk-pw-strength" id="pwStrengthBar">
+                        <div class="sk-pw-strength__track">
+                            <div class="sk-pw-strength__fill" id="pwStrengthFill"></div>
+                        </div>
+                        <span class="sk-pw-strength__label" id="pwStrengthLabel"></span>
+                    </div>
+                    <span class="sk-field-error" id="regPasswordError"></span>
+                </div>
+
+                <div class="sk-form-group">
+                    <label class="sk-label">Confirm password <span class="sk-required">*</span></label>
+                    <div class="sk-input-wrap">
+                        <i class="fas fa-lock-open sk-input-icon"></i>
+                        <input type="password" class="sk-input sk-input--with-toggle" id="regConfirmPassword" placeholder="Re-enter your password" required>
+                        <button type="button" class="sk-pw-toggle" data-target="regConfirmPassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <span class="sk-field-error" id="regConfirmError"></span>
+                </div>
+
+                <!-- Consent -->
+                <div class="sk-consent-box">
+                    <label class="sk-checkbox-wrap sk-checkbox-wrap--block">
+                        <input type="checkbox" id="regConsent" required>
+                        <span>
+                            I confirm that I am a legitimate resident of the selected barangay and agree to the
+                            <a href="#" class="sk-link">Terms of Use</a> and
+                            <a href="#" class="sk-link">Privacy Policy</a>.
+                        </span>
+                    </label>
+                    <span class="sk-field-error" id="regConsentError"></span>
+                </div>
+
+                <button type="submit" class="sk-btn-primary w-100 mt-3">
+                    <i class="fas fa-user-plus me-2"></i> Create Account
+                </button>
+            </form>
+
+            <div class="sk-modal__divider"><span>or</span></div>
+
+            <button class="sk-btn-outline w-100" id="goToLoginBtn">
+                <i class="fas fa-sign-in-alt me-2"></i> Already have an account? Sign in
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ============================================================
+         MODAL: COMMENT (with doc title + thread + compose)
+    ============================================================ -->
+    <div class="sk-modal-overlay" id="commentModal">
+        <div class="sk-modal sk-modal--lg">
+            <div class="sk-comment-modal__header">
+                <div class="sk-comment-modal__doc-info">
+                    <span class="sk-comment-modal__category" id="commentDocCategory">Development Plan</span>
+                    <h2 class="sk-comment-modal__doc-title" id="commentDocTitle">Document Title</h2>
+                    <p class="sk-comment-modal__doc-meta" id="commentDocMeta"></p>
+                </div>
+                <button class="sk-modal__close sk-modal__close--light" data-close="commentModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="sk-comment-modal__body">
+
+                <div class="sk-comment-modal__count">
+                    Comments
+                    <span class="sk-comment-count-badge" id="commentCount">0</span>
+                </div>
+
+                <!-- Comment thread -->
+                <div class="sk-comment-thread" id="commentThread">
+                    <!-- Populated by JS -->
+                </div>
+
+                <!-- Compose area -->
+                <div class="sk-comment-compose">
+
+                    <!-- Logged-in user indicator (shown when authenticated) -->
+                    <div class="sk-compose-user d-none" id="composeUserBanner">
+                        <div class="sk-compose-user__avatar" id="composeAvatar">MR</div>
+                        <span id="composeUserName">Maria Reyes</span>
+                        <span class="sk-compose-user__tag">Verified resident</span>
+                    </div>
+
+                    <!-- Anonymous user indicator (shown when guest) -->
+                    <div class="sk-compose-user sk-compose-user--ghost d-none" id="composeGuestBanner">
+                        <i class="fas fa-user-secret me-2"></i>
+                        <span>Commenting as <strong>Anonymous</strong></span>
+                        <button class="sk-link sk-link--sm ms-auto" id="switchToSignInBtn">Sign in instead</button>
+                    </div>
+
+                    <!-- Guest name / email fields (shown for anonymous) -->
+                    <div class="sk-guest-fields d-none" id="guestFields">
+                        <div class="sk-form-row">
+                            <div class="sk-form-group">
+                                <label class="sk-label">Display name <span class="sk-optional">(optional)</span></label>
+                                <input type="text" class="sk-input sk-input--sm" id="guestName" placeholder="e.g. Concerned Resident">
+                            </div>
+                            <div class="sk-form-group">
+                                <label class="sk-label">Email <span class="sk-optional">(optional, not shown publicly)</span></label>
+                                <input type="email" class="sk-input sk-input--sm" id="guestEmail" placeholder="Not shown publicly">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sk-compose-box">
+                        <textarea class="sk-compose-textarea" id="commentTextarea" placeholder="Write your comment..." rows="3"></textarea>
+                        <div class="sk-compose-footer">
+                            <span class="sk-compose-hint" id="composeHint">
+                                <i class="fas fa-shield-alt me-1"></i> Reviewed before publishing
+                            </span>
+                            <button class="sk-btn-primary sk-btn-primary--sm" id="submitCommentBtn">
+                                <i class="fas fa-paper-plane me-1"></i> Submit
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- CTA for unauthenticated (hidden once choice is made) -->
+                    <div class="sk-compose-cta" id="composeCta">
+                        <i class="fas fa-comment-dots me-2"></i>
+                        <span>Want to leave a comment?</span>
+                        <button class="sk-btn-primary sk-btn-primary--sm ms-2" id="startCommentBtn">Get started</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================================
+         MODAL: SUCCESS TOAST
+    ============================================================ -->
+    <div class="sk-toast" id="successToast">
+        <i class="fas fa-check-circle sk-toast__icon"></i>
+        <span class="sk-toast__msg" id="toastMessage">Action completed successfully.</span>
+    </div>
+
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+</html>
