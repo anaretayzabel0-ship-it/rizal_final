@@ -174,6 +174,7 @@ class AuthController {
             // Success
             const user = result.user;
             AuthController.setUser({
+                userId:    user.userId,
                 firstName: user.firstName,
                 lastName:  user.lastName,
                 email:     user.email,
@@ -283,6 +284,7 @@ class AuthController {
             // Success — set user and close modal
             const user = result.user;
             AuthController.setUser({
+                userId:     user.userId,
                 firstName:  user.firstName,
                 lastName:   user.lastName,
                 email:      user.email,
