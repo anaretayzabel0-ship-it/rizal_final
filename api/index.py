@@ -11,6 +11,7 @@ Currently implemented:
   POST /api/register
   GET  /api/get_barangays
   GET  /api/get_posts
+  POST /api/post_comment
 """
 
 import os
@@ -480,6 +481,108 @@ def get_posts():
     return jsonify({
         "success": True,
         "data": posts
+    }), 200
+
+
+@app.route("/api/post_comment", methods=["POST", "OPTIONS"])
+def post_comment():
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    try:
+        website_post_id = int(data.get("website_post_id") or 0)
+    except (TypeError, ValueError):
+        website_post_id = 0
+
+    try:
+        resident_id = int(data.get("resident_id") or 0)
+    except (TypeError, ValueError):
+        resident_id = 0
+
+    content = (data.get("content") or "").strip()
+
+    # ---- Validate ----
+    if website_post_id <= 0:
+        return jsonify({
+            "success": False,
+            "message": "Invalid post."
+        }), 400
+
+    if resident_id <= 0:
+        return jsonify({
+            "success": False,
+            "message": "You must be logged in to comment."
+        }), 401
+
+    if not content:
+        return jsonify({
+            "success": False,
+            "message": "Comment cannot be empty."
+        }), 400
+
+    # ---- Insert comment into Supabase ----
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/resident_comments"
+
+    new_comment = {
+        "website_post_id": website_post_id,
+        "resident_id": resident_id,
+        "content": content,
+        "is_read": False,
+        "is_flagged": False,
+    }
+
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(new_comment).encode("utf-8"),
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "return=representation",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            status_code = resp.status
+            response_body = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        try:
+            details = json.loads(error_body)
+        except json.JSONDecodeError:
+            details = error_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to post comment.",
+            "details": details
+        }), 500
+    except urllib.error.URLError as e:
+        return jsonify({
+            "success": False,
+            "message": f"Request failed: {e.reason}"
+        }), 500
+
+    if status_code != 201:
+        try:
+            details = json.loads(response_body)
+        except json.JSONDecodeError:
+            details = response_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to post comment.",
+            "details": details
+        }), 500
+
+    comment = json.loads(response_body)
+
+    return jsonify({
+        "success": True,
+        "message": "Comment posted successfully.",
+        "comment": comment[0]
     }), 200
 
 
