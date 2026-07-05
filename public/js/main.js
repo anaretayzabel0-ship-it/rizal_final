@@ -444,19 +444,21 @@ class CommentController {
         CommentController.renderThread(doc);
         CommentController.resetComposeArea();
 
+        // Anyone can open the thread to read it. Only the ability to
+        // compose/submit a comment depends on being signed in.
         if (currentUser) {
             CommentController.enterUserMode();
-            ModalController.open('commentModal');
         } else {
-            // Comments now require a verified account -- go straight to Sign In.
-            ModalController.open('loginModal');
+            CommentController.enterGuestViewMode();
         }
+        ModalController.open('commentModal');
     }
 
     static resetComposeArea() {
         const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
         hide('composeUserBanner');
         hide('composeCta');
+        hide('composeBox');
         const textarea = document.getElementById('commentTextarea');
         if (textarea) textarea.value = '';
     }
@@ -471,7 +473,19 @@ class CommentController {
         const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; };
         const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
         show('composeUserBanner');
+        show('composeBox');
         hide('composeCta');
+    }
+
+    static enterGuestViewMode() {
+        // Not signed in: they can still read the thread, but see a
+        // "sign in to comment" prompt instead of an editable textarea.
+        commentMode = null;
+        const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; };
+        const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+        hide('composeUserBanner');
+        hide('composeBox');
+        show('composeCta');
     }
 
     static renderThread(doc) {
