@@ -4,12 +4,12 @@ Single Vercel Python entrypoint (Flask app).
 
 Vercel's current Python runtime expects ONE entrypoint file (app.py, index.py,
 server.py, main.py, wsgi.py, or asgi.py) exposing a Flask/FastAPI/Django `app`
-variable. All routes are defined inside this one app -- Vercel does not treat
-every .py file in /api as its own separate function anymore.
+variable. All routes are defined inside this one app.
 
-Currently implemented: POST /api/login
-(Other endpoints -- register, get_posts, get_barangays, post_comment -- will
-be added as additional @app.route(...) functions in this same file.)
+Currently implemented:
+  POST /api/login
+  POST /api/register
+  GET  /api/get_barangays
 """
 
 import os
@@ -59,6 +59,21 @@ def _verify_password(plain_password, hashed_password):
         return bcrypt.checkpw(plain_password.encode("utf-8"), normalized.encode("utf-8"))
     except ValueError:
         return False
+
+
+def _supabase_get(path_and_query):
+    url = f"{SUPABASE_URL.rstrip('/')}{path_and_query}"
+    req = urllib.request.Request(
+        url,
+        method="GET",
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+    with urllib.request.urlopen(req) as resp:
+        return resp.status, resp.read().decode("utf-8")
 
 
 @app.route("/api/login", methods=["GET", "POST", "OPTIONS"])
@@ -175,6 +190,227 @@ def login():
             "position": user.get("position"),
             "barangayId": user.get("barangay_id"),
         }
+    }), 200
+
+
+@app.route("/api/register", methods=["POST", "OPTIONS"])
+def register():
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    first_name = (data.get("firstName") or "").strip()
+    last_name = (data.get("lastName") or "").strip()
+    middle_initial = (data.get("middleInitial") or "").strip()
+    email = (data.get("email") or "").strip()
+    try:
+        barangay_id = int(data.get("barangayId") or 0)
+    except (TypeError, ValueError):
+        barangay_id = 0
+    password = data.get("password") or ""
+    confirm_password = data.get("confirmPassword") or ""
+
+    # ---- Validate ----
+    errors = {}
+    if not first_name:
+        errors["firstName"] = "First name is required."
+    if not last_name:
+        errors["lastName"] = "Last name is required."
+    if not email:
+        errors["email"] = "Email is required."
+    elif not EMAIL_RE.match(email):
+        errors["email"] = "Invalid email address."
+    if barangay_id <= 0:
+        errors["barangayId"] = "Please select your barangay."
+    if not password:
+        errors["password"] = "Password is required."
+    elif len(password) < 8:
+        errors["password"] = "Password must be at least 8 characters."
+    if password != confirm_password:
+        errors["confirmPassword"] = "Passwords do not match."
+
+    if errors:
+        return jsonify({
+            "success": False,
+            "errors": errors
+        }), 422
+
+    # ---- Check if email already exists in Supabase ----
+    try:
+        _, check_body = _supabase_get(
+            f"/rest/v1/users?email=eq.{urllib.parse.quote(email)}&select=user_id"
+        )
+    except (urllib.error.HTTPError, urllib.error.URLError):
+        return jsonify({
+            "success": False,
+            "message": "Server error. Please try again."
+        }), 500
+
+    existing = json.loads(check_body) if check_body else []
+    if existing:
+        return jsonify({
+            "success": False,
+            "errors": {"email": "This email is already registered."}
+        }), 409
+
+    # ---- Get resident role_id ----
+    try:
+        _, role_body = _supabase_get(
+            "/rest/v1/roles?role_name=eq.resident&select=role_id"
+        )
+    except (urllib.error.HTTPError, urllib.error.URLError):
+        return jsonify({
+            "success": False,
+            "message": "Server error. Please try again."
+        }), 500
+
+    roles = json.loads(role_body) if role_body else []
+    if not roles:
+        return jsonify({
+            "success": False,
+            "message": "Role 'resident' not found. Please contact the administrator."
+        }), 500
+
+    role_id = roles[0]["role_id"]
+
+    # ---- Hash password ----
+    hashed_password = bcrypt.hashpw(
+        password.encode("utf-8"), bcrypt.gensalt()
+    ).decode("utf-8")
+
+    # ---- Insert new user into Supabase ----
+    insert_url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/users"
+
+    new_user = {
+        "role_id": role_id,
+        "barangay_id": barangay_id,
+        "first_name": first_name,
+        "last_name": last_name,
+        "middle_initial": middle_initial or None,
+        "email": email,
+        "password": hashed_password,
+        "status": "active",
+        "position": "resident",
+    }
+
+    req = urllib.request.Request(
+        insert_url,
+        data=json.dumps(new_user).encode("utf-8"),
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "return=representation",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            status_code = resp.status
+            response_body = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        try:
+            details = json.loads(error_body)
+        except json.JSONDecodeError:
+            details = error_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to create account. Please try again.",
+            "details": details
+        }), 500
+    except urllib.error.URLError as e:
+        return jsonify({
+            "success": False,
+            "message": f"Request failed: {e.reason}"
+        }), 500
+
+    if status_code != 201:
+        try:
+            details = json.loads(response_body)
+        except json.JSONDecodeError:
+            details = response_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to create account. Please try again.",
+            "details": details
+        }), 500
+
+    created = json.loads(response_body)[0]
+
+    return jsonify({
+        "success": True,
+        "message": "Account created successfully! You can now log in.",
+        "user": {
+            "userId": created.get("user_id"),
+            "firstName": created.get("first_name"),
+            "lastName": created.get("last_name"),
+            "email": created.get("email"),
+            "status": created.get("status"),
+        }
+    }), 200
+
+
+@app.route("/api/get_barangays", methods=["GET", "OPTIONS"])
+def get_barangays():
+    if request.method == "OPTIONS":
+        return "", 204
+
+    url = (
+        f"{SUPABASE_URL.rstrip('/')}/rest/v1/barangays"
+        "?select=barangay_id,barangay_name,municipality,province"
+        "&order=barangay_name.asc"
+    )
+
+    req = urllib.request.Request(
+        url,
+        method="GET",
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            status_code = resp.status
+            response_body = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        try:
+            details = json.loads(error_body)
+        except json.JSONDecodeError:
+            details = error_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch barangays.",
+            "details": details
+        }), e.code
+    except urllib.error.URLError as e:
+        return jsonify({
+            "success": False,
+            "message": f"Request failed: {e.reason}"
+        }), 500
+
+    if status_code != 200:
+        try:
+            details = json.loads(response_body)
+        except json.JSONDecodeError:
+            details = response_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch barangays.",
+            "details": details
+        }), status_code
+
+    barangays = json.loads(response_body) if response_body else []
+
+    return jsonify({
+        "success": True,
+        "data": barangays
     }), 200
 
 
