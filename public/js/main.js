@@ -18,6 +18,8 @@ let DOCUMENTS_DATA = [];
 let currentUser = null;
 let commentMode = null;
 let activeDocId = null;
+let draftCommentText = '';
+let draftCommentDocId = null;
 
 const MOCK_USERS = [
     { email: 'maria@example.com', password: 'password123', firstName: 'Maria', lastName: 'Reyes', barangay: 'san-roque' }
@@ -312,8 +314,6 @@ class AuthController {
         } finally {
             if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i> Create Account'; }
         }
-
-        AuthController.showToast(`Account created! Welcome, ${firstName}!`);
     }
 
     static setUser(user) {
@@ -452,21 +452,20 @@ class CommentController {
         CommentController.renderThread(doc);
         CommentController.resetComposeArea();
 
-        // Anyone can open the thread to read it. Only the ability to
-        // compose/submit a comment depends on being signed in.
+        // Compose box is now visible to everyone, logged in or not.
+        // Only the "signed in as ___" banner depends on auth state.
+        document.getElementById('composeBox').style.display = 'flex';
+
         if (currentUser) {
             CommentController.enterUserMode();
-        } else {
-            CommentController.enterGuestViewMode();
         }
+
         ModalController.open('commentModal');
     }
 
     static resetComposeArea() {
-        const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
-        hide('composeUserBanner');
-        hide('composeCta');
-        hide('composeBox');
+        const banner = document.getElementById('composeUserBanner');
+        if (banner) banner.style.display = 'none';
         const textarea = document.getElementById('commentTextarea');
         if (textarea) textarea.value = '';
     }
@@ -478,22 +477,16 @@ class CommentController {
         document.getElementById('composeAvatar').textContent = initials;
         document.getElementById('composeUserName').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
 
-        const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; };
-        const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
-        show('composeUserBanner');
-        show('composeBox');
-        hide('composeCta');
-    }
+        document.getElementById('composeUserBanner').style.display = 'flex';
+        document.getElementById('composeBox').style.display = 'flex';
 
-    static enterGuestViewMode() {
-        // Not signed in: they can still read the thread, but see a
-        // "sign in to comment" prompt instead of an editable textarea.
-        commentMode = null;
-        const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; };
-        const hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
-        hide('composeUserBanner');
-        hide('composeBox');
-        show('composeCta');
+        // Restore a draft comment typed before the user was prompted to sign in
+        if (draftCommentText && draftCommentDocId === activeDocId) {
+            const textarea = document.getElementById('commentTextarea');
+            if (textarea) textarea.value = draftCommentText;
+        }
+        draftCommentText = '';
+        draftCommentDocId = null;
     }
 
     static renderThread(doc) {
@@ -576,8 +569,10 @@ class CommentController {
         const textarea = document.getElementById('commentTextarea');
         const text     = textarea?.value.trim();
 
-        // Must be logged in
+        // Must be logged in — stash the draft and prompt sign-in
         if (!currentUser) {
+            draftCommentText = textarea?.value || '';
+            draftCommentDocId = activeDocId;
             ModalController.close('commentModal');
             ModalController.open('loginModal');
             return;
@@ -659,20 +654,6 @@ class CommentController {
     static init() {
         document.getElementById('submitCommentBtn')?.addEventListener('click', () => {
             CommentController.submitComment();
-        });
-
-        document.getElementById('startCommentBtn')?.addEventListener('click', () => {
-            if (currentUser) {
-                CommentController.enterUserMode();
-            } else {
-                ModalController.close('commentModal');
-                ModalController.open('loginModal');
-            }
-        });
-
-        document.getElementById('switchToSignInBtn')?.addEventListener('click', () => {
-            ModalController.close('commentModal');
-            ModalController.open('loginModal');
         });
     }
 }
