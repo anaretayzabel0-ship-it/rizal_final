@@ -667,13 +667,11 @@ class NavigationController {
     constructor() {
         this.pages = {
             home:        document.getElementById('homePage'),
-            resolutions: document.getElementById('resolutionsPage'),
             policyBoard: document.getElementById('policyBoardPage')
         };
 
         this.navLinks = {
             home:           document.getElementById('homeNavLink'),
-            resolutions:    document.getElementById('resolutionsNavLink'),
             policyBoard:    document.getElementById('policyBoardNavLink'),
             accomplishment: document.getElementById('accomplishmentNavLink')
         };
@@ -689,7 +687,6 @@ class NavigationController {
 
     setupEventListeners() {
         this.navLinks.home?.addEventListener('click', (e) => { e.preventDefault(); this.showPage('home'); });
-        this.navLinks.resolutions?.addEventListener('click', (e) => { e.preventDefault(); this.showPage('resolutions'); });
         this.navLinks.policyBoard?.addEventListener('click', (e) => {
             e.preventDefault();
             this.showPage('policyBoard');
@@ -794,12 +791,39 @@ class NavigationController {
         }
     }
 
+    // Group documents by barangay + document type, so each type (e.g. CBYDP)
+    // shows a single card for its current/latest year, with older years
+    // tucked away in an expandable "past versions" list.
+    groupDocumentsByType(docs) {
+        const groups = new Map();
+
+        docs.forEach(doc => {
+            const key = `${doc.barangay || 'na'}||${doc.documentType || doc.category || 'doc'}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(doc);
+        });
+
+        const result = [];
+        groups.forEach(groupDocs => {
+            // Newest year first. Docs without a year fall to the end.
+            const sorted = [...groupDocs].sort((a, b) => (parseInt(b.year) || 0) - (parseInt(a.year) || 0));
+            result.push({
+                primary: sorted[0],
+                older:   sorted.slice(1)
+            });
+        });
+
+        return result;
+    }
+
     renderDocuments(docs = DOCUMENTS_DATA) {
         const container = document.getElementById('documentsContainer');
         if (!container) return;
         container.innerHTML = '';
 
-        docs.forEach(doc => {
+        const groups = this.groupDocumentsByType(docs);
+
+        groups.forEach(({ primary: doc, older }) => {
             const commentCount = Array.isArray(doc.comments) ? doc.comments.length : 0;
             const card = document.createElement('div');
             card.className = `document-card ${doc.isFeatured ? 'card-featured' : ''}`;
@@ -807,10 +831,16 @@ class NavigationController {
             card.setAttribute('data-year',     doc.year);
             card.setAttribute('data-doc-id',   doc.id);
 
+            const pastId = `pastVersions-${doc.id}`;
+
             card.innerHTML = `
                 <div class="card-content">
                     <div class="doc-header">
-                        <span class="doc-category">${doc.category}</span>
+                        <div class="doc-badges">
+                            <span class="doc-category">${doc.category}</span>
+                            ${doc.documentType ? `<span class="doc-type-badge">${doc.documentType}</span>` : ''}
+                        </div>
+                        <span class="doc-year-badge"><i class="fas fa-calendar-alt me-1"></i>${doc.year || 'N/A'}</span>
                     </div>
                     <h3 class="doc-title">${doc.title}</h3>
                     <div class="doc-meta">
@@ -821,6 +851,30 @@ class NavigationController {
                         </span>
                     </div>
                     <p class="doc-description">${doc.description}</p>
+                    ${older.length > 0 ? `
+                    <button class="doc-past-toggle" data-target="${pastId}">
+                        <i class="fas fa-history me-1"></i>
+                        View ${older.length} past version${older.length !== 1 ? 's' : ''}
+                        <i class="fas fa-chevron-down doc-past-toggle__icon"></i>
+                    </button>
+                    <div class="doc-past-versions" id="${pastId}" style="display: none;">
+                        ${older.map(o => `
+                            <div class="doc-past-item">
+                                <div class="doc-past-item__info">
+                                    <span class="doc-past-item__year">${o.year || 'N/A'}</span>
+                                    <span class="doc-past-item__title">${o.title}</span>
+                                    <span class="doc-past-item__date">Updated ${o.date}</span>
+                                </div>
+                                <div class="doc-past-item__actions">
+                                    <button class="btn-view-sm" data-doc-id="${o.id}" data-file="${o.fileUrl || ''}" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-download-sm" data-file="${o.fileUrl || ''}" title="Download">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </div>
+                            </div>`).join('')}
+                    </div>` : ''}
                     <div class="doc-divider"></div>
                     <div class="doc-actions">
                         <button class="btn-comment" data-doc-id="${doc.id}">
@@ -879,6 +933,64 @@ class NavigationController {
         });
 
         document.querySelectorAll('.btn-download').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const file = btn.getAttribute('data-file');
+                if (file) {
+                    const a = document.createElement('a');
+                    a.href = file;
+                    a.download = '';
+                    a.click();
+                } else {
+                    alert('No file available for this document.');
+                }
+            });
+        });
+
+        // Toggle the "past versions" list open/closed
+        document.querySelectorAll('.doc-past-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const panel = document.getElementById(targetId);
+                if (!panel) return;
+
+                const isOpen = panel.style.display !== 'none';
+                panel.style.display = isOpen ? 'none' : 'block';
+                btn.classList.toggle('doc-past-toggle--open', !isOpen);
+            });
+        });
+
+        // Mini "view" buttons inside the past-versions list
+        document.querySelectorAll('.btn-view-sm').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const docId = parseInt(btn.getAttribute('data-doc-id'));
+                const file  = btn.getAttribute('data-file');
+                const doc   = DOCUMENTS_DATA.find(d => d.id === docId);
+
+                document.getElementById('viewDocCategory').textContent = doc?.category || 'Document';
+                document.getElementById('viewDocTitle').textContent = doc?.title || '';
+                document.getElementById('viewDocMeta').textContent = doc
+                    ? `${doc.barangayName}  ·  Updated ${doc.date}`
+                    : '';
+
+                const frame = document.getElementById('viewDocFrame');
+                const empty = document.getElementById('viewDocEmpty');
+
+                if (file) {
+                    frame.src = file;
+                    frame.style.display = 'block';
+                    empty.style.display = 'none';
+                } else {
+                    frame.src = '';
+                    frame.style.display = 'none';
+                    empty.style.display = 'block';
+                }
+
+                ModalController.open('viewDocumentModal');
+            });
+        });
+
+        // Mini "download" buttons inside the past-versions list
+        document.querySelectorAll('.btn-download-sm').forEach(btn => {
             btn.addEventListener('click', () => {
                 const file = btn.getAttribute('data-file');
                 if (file) {

@@ -396,7 +396,15 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     flex-wrap: wrap;
+    gap: 0.6rem;
     margin-bottom: 1rem;
+}
+
+.doc-badges {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .doc-category {
@@ -409,6 +417,27 @@ body {
     border-radius: 20px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.doc-type-badge {
+    display: inline-block;
+    padding: 0.3rem 1rem;
+    background: transparent;
+    color: var(--primary-red);
+    border: 1.5px solid var(--primary-red);
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.doc-year-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-light);
 }
 
 .doc-title {
@@ -469,6 +498,100 @@ body {
     background: #ecf0f1;
     margin: 1rem 0;
 }
+
+/* ---- Past versions (older years of the same document type) ---- */
+.doc-past-toggle {
+    display: inline-flex;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 1rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--primary-red);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.doc-past-toggle:hover { color: var(--primary-red-dark); }
+
+.doc-past-toggle__icon {
+    margin-left: 0.4rem;
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+}
+
+.doc-past-toggle--open .doc-past-toggle__icon {
+    transform: rotate(180deg);
+}
+
+.doc-past-versions {
+    background: #f9f9f9;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.doc-past-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.doc-past-item:last-child { border-bottom: none; }
+
+.doc-past-item__info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+}
+
+.doc-past-item__year {
+    font-weight: 700;
+    color: var(--primary-red);
+    background: #fdecea;
+    border-radius: 6px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.75rem;
+}
+
+.doc-past-item__title {
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.doc-past-item__date {
+    color: var(--text-light);
+    font-size: 0.78rem;
+}
+
+.doc-past-item__actions {
+    display: flex;
+    gap: 0.8rem;
+}
+
+.btn-view-sm, .btn-download-sm {
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.2rem;
+    transition: var(--transition);
+}
+
+.btn-view-sm { color: var(--text-dark); }
+.btn-view-sm:hover { color: var(--primary-red); }
+.btn-download-sm { color: #27ae60; }
+.btn-download-sm:hover { color: #229954; }
 
 
 /* ========== RESOLUTIONS AND ORDINANCES PAGE ========== */
