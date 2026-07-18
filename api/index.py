@@ -20,6 +20,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import json
+import pickle
 
 import bcrypt
 from flask import Flask, request, jsonify
@@ -36,6 +37,36 @@ SUPABASE_KEY = os.environ.get(
 )
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+# ---- Sentiment classifier (for auto-flagging negative/toxic comments) ----
+# vectorizer.pkl / sentiment_model.pkl must sit alongside this file (api/).
+# Loaded once at cold start, reused across requests within the same
+# serverless function instance.
+_SENTIMENT_DIR = os.path.dirname(os.path.abspath(__file__))
+sentiment_vectorizer = None
+sentiment_model = None
+try:
+    with open(os.path.join(_SENTIMENT_DIR, "vectorizer.pkl"), "rb") as f:
+        sentiment_vectorizer = pickle.load(f)
+    with open(os.path.join(_SENTIMENT_DIR, "sentiment_model.pkl"), "rb") as f:
+        sentiment_model = pickle.load(f)
+except FileNotFoundError:
+    # Sentiment model files not deployed yet -- comments will simply not
+    # be auto-flagged until vectorizer.pkl / sentiment_model.pkl are added.
+    pass
+
+
+def is_comment_negative(text):
+    """Returns True if the comment should be auto-flagged for review."""
+    if sentiment_vectorizer is None or sentiment_model is None:
+        return False
+    try:
+        vec = sentiment_vectorizer.transform([text])
+        prediction = sentiment_model.predict(vec)[0]
+        return bool(prediction == 1)
+    except Exception:
+        # Never let a scoring failure block a comment from posting.
+        return False
 
 
 @app.after_request
@@ -522,6 +553,9 @@ def post_comment():
             "message": "Comment cannot be empty."
         }), 400
 
+    # ---- Auto-flag negative/toxic comments for officials to review ----
+    should_flag = is_comment_negative(content)
+
     # ---- Insert comment into Supabase ----
     url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/resident_comments"
 
@@ -530,7 +564,7 @@ def post_comment():
         "resident_id": resident_id,
         "content": content,
         "is_read": False,
-        "is_flagged": False,
+        "is_flagged": should_flag,
     }
 
     req = urllib.request.Request(
