@@ -57,7 +57,7 @@ except FileNotFoundError:
 
 
 def is_comment_negative(text):
-    """Returns True if the comment should be auto-flagged for review."""
+    """Returns True if the ML model classifies this comment as negative/toxic."""
     if sentiment_vectorizer is None or sentiment_model is None:
         return False
     try:
@@ -67,6 +67,34 @@ def is_comment_negative(text):
     except Exception:
         # Never let a scoring failure block a comment from posting.
         return False
+
+
+# ---- Keyword blocklist (guarantees a flag regardless of sentence context) ----
+# The ML model above weighs a whole sentence statistically, so a single bad
+# word CAN occasionally get outvoted by an otherwise neutral-sounding
+# sentence. This list is a hard rule on top of that: if any of these words
+# appear anywhere in the comment, it is flagged, no exceptions.
+# Add more words here any time -- no retraining needed for this part.
+FLAGGED_WORDS = {
+    "bobo", "tanga", "gago", "gaga", "ulol", "tarantado",
+    "hayop", "walang hiya", "walang kwenta", "inutil", "kupal",
+    "ungas", "gunggong", "sira ulo", "walang utak", "peste",
+    "putangina", "putang ina", "leche",
+}
+
+
+def contains_flagged_word(text):
+    """Returns True if any word/phrase in FLAGGED_WORDS appears in the text."""
+    text_lower = text.lower()
+    for word in FLAGGED_WORDS:
+        if re.search(rf"\b{re.escape(word)}\b", text_lower):
+            return True
+    return False
+
+
+def should_flag_comment(text):
+    """Combined check: keyword blocklist (guaranteed) OR ML model (contextual)."""
+    return contains_flagged_word(text) or is_comment_negative(text)
 
 
 @app.after_request
@@ -554,7 +582,7 @@ def post_comment():
         }), 400
 
     # ---- Auto-flag negative/toxic comments for officials to review ----
-    should_flag = is_comment_negative(content)
+    should_flag = should_flag_comment(content)
 
     # ---- Insert comment into Supabase ----
     url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/resident_comments"

@@ -1,0 +1,2 @@
+cd training
+python train_sentiment_model.py

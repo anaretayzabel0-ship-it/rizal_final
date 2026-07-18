@@ -105,6 +105,9 @@ TRAINING_DATA = [
     ("Nagagalit ako sa kapabayaan niyong ipinapakita.", 1),
     ("Grabe ka-duwag, ayaw sagutin ang mga tanong namin.", 1),
     ("Tuta lang kayo ng mga politiko, wala kayong sariling pananaw.", 1),
+        ("Bobo", 1),
+        ("Tanga", 1),
+
 ]
 
 TEXTS = [t for t, _ in TRAINING_DATA]
