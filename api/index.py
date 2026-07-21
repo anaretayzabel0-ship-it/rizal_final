@@ -12,6 +12,7 @@ Currently implemented:
   GET  /api/get_barangays
   GET  /api/get_posts
   POST /api/post_comment
+  POST /api/post_reply
 """
 
 import os
@@ -535,7 +536,9 @@ def get_posts():
             "details": details
         }), status_code
 
-    posts = json.loads(response_body) if response_body else []
+    # json_agg returns SQL NULL (serialised as "null") when there are no rows.
+    raw = json.loads(response_body) if response_body else None
+    posts = raw if isinstance(raw, list) else []
 
     return jsonify({
         "success": True,
@@ -645,6 +648,118 @@ def post_comment():
         "success": True,
         "message": "Comment posted successfully.",
         "comment": comment[0]
+    }), 200
+
+
+@app.route("/api/post_reply", methods=["POST", "OPTIONS"])
+def post_reply():
+    """
+    SK official replies to a resident comment.
+
+    Expected JSON body:
+      {
+        "comment_id":  <int>,   # the resident_comments row being replied to
+        "replied_by":  <int>,   # user_id of the SK official
+        "content":     <str>
+      }
+
+    Inserts a row into sk_replies and returns the created row.
+    """
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    try:
+        comment_id = int(data.get("comment_id") or 0)
+    except (TypeError, ValueError):
+        comment_id = 0
+
+    try:
+        replied_by = int(data.get("replied_by") or 0)
+    except (TypeError, ValueError):
+        replied_by = 0
+
+    content = (data.get("content") or "").strip()
+
+    # ---- Validate ----
+    if comment_id <= 0:
+        return jsonify({
+            "success": False,
+            "message": "Invalid comment."
+        }), 400
+
+    if replied_by <= 0:
+        return jsonify({
+            "success": False,
+            "message": "You must be logged in to reply."
+        }), 401
+
+    if not content:
+        return jsonify({
+            "success": False,
+            "message": "Reply cannot be empty."
+        }), 400
+
+    # ---- Insert reply into Supabase ----
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/sk_replies"
+
+    new_reply = {
+        "comment_id": comment_id,
+        "replied_by": replied_by,
+        "content": content,
+    }
+
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(new_reply).encode("utf-8"),
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "return=representation",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            status_code = resp.status
+            response_body = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        try:
+            details = json.loads(error_body)
+        except json.JSONDecodeError:
+            details = error_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to post reply.",
+            "details": details
+        }), 500
+    except urllib.error.URLError as e:
+        return jsonify({
+            "success": False,
+            "message": f"Request failed: {e.reason}"
+        }), 500
+
+    if status_code != 201:
+        try:
+            details = json.loads(response_body)
+        except json.JSONDecodeError:
+            details = response_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to post reply.",
+            "details": details
+        }), 500
+
+    reply = json.loads(response_body)
+
+    return jsonify({
+        "success": True,
+        "message": "Reply posted successfully.",
+        "reply": reply[0]
     }), 200
 
 
