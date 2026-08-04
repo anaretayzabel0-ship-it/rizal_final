@@ -741,8 +741,8 @@ class NavigationController {
             // 3. Map the API response fields to what renderDocuments() expects
             DOCUMENTS_DATA = (result.data || []).map(post => ({
                 id:           post.website_post_id,
-                category:     post.document_category   || 'Document',
-                documentType: post.document_type        || '',
+                category:     post.category?.document_category || 'Document',
+                documentType: post.type?.document_type          || '',
                 title:        post.title,
                 barangay:     post.barangay?.barangay_id   || '',
                 barangayName: post.barangay?.barangay_name || '',
