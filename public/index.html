@@ -51,10 +51,13 @@
     <!-- ========== NAVIGATION ========== -->
     <nav class="sk-navbar navbar navbar-expand-lg">
         <div class="container">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+            <button class="navbar-toggler" type="button" id="navDrawerToggle">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="mainNavbar">
+                <button class="nav-drawer-close" id="navDrawerClose" title="Close menu">
+                    <i class="fas fa-times"></i>
+                </button>
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="#" id="homeNavLink">Home</a>
@@ -79,6 +82,9 @@
             </div>
         </div>
     </nav>
+
+    <!-- Backdrop for the mobile nav drawer (phone widths only) -->
+    <div class="nav-drawer-backdrop" id="navDrawerBackdrop"></div>
 
     <!-- ========== MAIN CONTENT ========== -->
     <main>

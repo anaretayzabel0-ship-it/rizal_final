@@ -211,6 +211,19 @@ body {
     color: var(--white);
 }
 
+/* Mobile nav drawer close button + backdrop — inert outside phone widths */
+.nav-drawer-close { display: none; }
+
+.nav-drawer-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 42, 59, 0.55);
+    z-index: 2050;
+}
+
+.nav-drawer-backdrop.is-visible { display: block; }
+
 
 /* ========== HERO SECTION ========== */
 .hero-section {
@@ -1755,10 +1768,46 @@ body {
     .logo-circle i { font-size: 1.8rem; }
     .header-text .tagline { display: none; }
 
-    /* Nav */
-    .sk-navbar .navbar-collapse { background: var(--primary-red); margin: 0 -0.5rem; padding: 0.3rem 0.5rem 0.6rem; }
-    .sk-navbar .navbar-nav .nav-link { padding: 0.7rem 1rem; border-radius: 6px; }
+    /* Nav — slide-in drawer instead of push-down dropdown */
+    .sk-navbar .navbar-collapse {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: min(78vw, 300px);
+        height: 100vh;
+        height: 100dvh;
+        margin: 0;
+        background: var(--primary-red);
+        display: flex !important;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 3.5rem 0.6rem 1.5rem;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 2100;
+        overflow-y: auto;
+        box-shadow: 6px 0 24px rgba(0,0,0,0.3);
+    }
+    .sk-navbar .navbar-collapse.show { transform: translateX(0); }
+    .sk-navbar .navbar-nav { width: 100%; }
+    .sk-navbar .navbar-nav .nav-link { padding: 0.85rem 1.1rem; border-radius: 6px; }
     .dropdown-menu { width: 100%; }
+    .nav-drawer-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        border: none;
+        color: #fff;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
 
     /* Hero */
     .hero-section { min-height: 340px; padding: 1.5rem 1rem; }
@@ -1770,14 +1819,28 @@ body {
     .btn-featured { width: 100%; }
     .filter-search-input { padding: 0.75rem 2.4rem; font-size: 0.85rem; }
 
-    /* Document cards */
+    /* Document cards — keep Comment / View / Download in one horizontal row */
     .doc-header { flex-direction: column; gap: 0.5rem; }
-    .doc-actions { gap: 0.75rem; flex-wrap: wrap; }
+    .doc-actions { gap: 0.4rem; flex-wrap: nowrap; justify-content: space-between; }
+    .doc-actions button {
+        flex: 1;
+        justify-content: center;
+        padding: 0.55rem 0.3rem;
+        font-size: 0.78rem;
+        border: 1px solid #eee;
+        border-radius: 8px;
+    }
+    .doc-actions button i { margin-right: 0.3rem; }
 
     /* Comment thread nesting — compress so it doesn't run off-screen */
+    .sk-reply-thread { margin-left: 1.6rem; padding-left: 0.6rem; }
     .sk-subreply-thread { margin-left: 1.6rem; padding-left: 0.6rem; }
     .sk-reply-compose { margin-left: 1.6rem; }
     .sk-comment-thread { max-height: 45vh; }
+    .sk-comment-item, .sk-reply-item, .sk-subreply-item { gap: 0.5rem; }
+    .sk-comment-avatar { width: 30px; height: 30px; }
+    .sk-comment-bubble--official,
+    .sk-subreply-item .sk-comment-bubble { padding: 0.5rem 0.65rem; }
 
     /* Footer */
     .footer-content { flex-direction: column; text-align: center; gap: 0.6rem; }
@@ -1794,8 +1857,8 @@ body {
 @media (max-width: 576px) {
     .card-content { padding: 1rem; }
     .doc-meta { gap: 0.6rem; font-size: 0.8rem; }
-    .doc-actions { flex-direction: column; align-items: stretch; gap: 0.5rem; }
-    .doc-actions button { width: 100%; justify-content: center; }
+    .doc-actions button { font-size: 0.72rem; padding: 0.5rem 0.2rem; }
+    .doc-actions button i { margin-right: 0.2rem; }
 
     .hero-section { min-height: 280px; }
     .hero-seal { font-size: 2.2rem; }
@@ -1812,10 +1875,15 @@ body {
     .memorandum-card p { font-size: 0.88rem; }
 
     /* Reply-to-reply nesting gets tight on phones — flatten it further */
-    .sk-subreply-thread { margin-left: 1rem; gap: 0.5rem; }
+    .sk-reply-thread { margin-left: 1rem; padding-left: 0.5rem; gap: 0.5rem; }
+    .sk-subreply-thread { margin-left: 1rem; padding-left: 0.5rem; gap: 0.5rem; }
     .sk-reply-compose { margin-left: 1rem; flex-direction: column; align-items: stretch; }
     .sk-reply-compose-send { padding: 0.5rem; align-self: flex-end; }
     .sk-comment-thread { max-height: 50vh; }
+    .sk-comment-avatar { width: 26px; height: 26px; font-size: 0.62rem; }
+    .sk-subreply-item .sk-comment-avatar { width: 22px; height: 22px; }
+    .sk-comment-author { font-size: 0.8rem; }
+    .sk-comment-text { font-size: 0.8rem; }
 
     .filter-search-input { padding: 0.7rem 2.2rem; }
     .filter-search-icon { left: 0.85rem; }
@@ -1837,7 +1905,8 @@ body {
     .sk-modal__title { font-size: 1.1rem; }
     .sk-comment-modal__doc-title { font-size: 0.9rem; }
 
-    .sk-subreply-thread, .sk-reply-compose { margin-left: 0.6rem; }
+    .sk-reply-thread, .sk-subreply-thread, .sk-reply-compose { margin-left: 0.6rem; }
+    .doc-actions button span { display: none; }
 }
 
 /* Touch devices: keep tap targets comfortable regardless of screen width */

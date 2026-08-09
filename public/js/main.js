@@ -10,6 +10,51 @@
 
 let DOCUMENTS_DATA = [];
 
+// Matches the CSS "phone" breakpoint — used to decide whether the
+// document viewer needs the Google Docs Viewer fallback (see below).
+function isPhoneViewport() {
+    return window.matchMedia('(max-width: 768px)').matches;
+}
+
+// Android Chrome (and most mobile browsers) can't render a PDF inline
+// inside an <iframe> the way desktop Chrome does — instead of the file,
+// they show a generic "here's a file, tap Open" card, which means an
+// extra tap before the resident actually sees the document. Routing
+// through Google's document viewer embed renders it inline immediately,
+// so we only do this on phone widths; desktop keeps the direct file URL.
+function getViewerSrc(fileUrl) {
+    if (!fileUrl) return '';
+    if (isPhoneViewport()) {
+        return `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(fileUrl)}`;
+    }
+    return fileUrl;
+}
+
+// Shared by the main "View" button and the mini "View" buttons on past
+// versions — populates and opens the view-document modal.
+function openDocumentViewer(doc, file) {
+    document.getElementById('viewDocCategory').textContent = doc?.category || 'Document';
+    document.getElementById('viewDocTitle').textContent = doc?.title || '';
+    document.getElementById('viewDocMeta').textContent = doc
+        ? `${doc.barangayName}  ·  Updated ${doc.date}`
+        : '';
+
+    const frame = document.getElementById('viewDocFrame');
+    const empty = document.getElementById('viewDocEmpty');
+
+    if (file) {
+        frame.src = getViewerSrc(file);
+        frame.style.display = 'block';
+        empty.style.display = 'none';
+    } else {
+        frame.src = '';
+        frame.style.display = 'none';
+        empty.style.display = 'block';
+    }
+
+    ModalController.open('viewDocumentModal');
+}
+
 
 // ==========================================
 // AUTH STATE
@@ -812,6 +857,58 @@ class CommentController {
 // NAVIGATION CONTROLLER
 // ==========================================
 
+// ==========================================
+// MOBILE NAV DRAWER
+// ==========================================
+// Phone widths only (see CSS @media max-width:768px) — the hamburger
+// button no longer uses Bootstrap's data-bs-toggle="collapse" (which
+// pushes page content down); instead this toggles a plain .show class
+// that the phone-width CSS turns into a slide-in overlay drawer.
+// At tablet/desktop widths this class has no special effect, so
+// behavior there is unchanged.
+
+class NavDrawerController {
+    static init() {
+        const toggle   = document.getElementById('navDrawerToggle');
+        const drawer   = document.getElementById('mainNavbar');
+        const backdrop = document.getElementById('navDrawerBackdrop');
+        const closeBtn = document.getElementById('navDrawerClose');
+
+        if (!toggle || !drawer) return;
+
+        const open = () => {
+            drawer.classList.add('show');
+            backdrop?.classList.add('is-visible');
+            document.body.style.overflow = 'hidden';
+        };
+
+        const close = () => {
+            drawer.classList.remove('show');
+            backdrop?.classList.remove('is-visible');
+            document.body.style.overflow = '';
+        };
+
+        toggle.addEventListener('click', () => {
+            drawer.classList.contains('show') ? close() : open();
+        });
+
+        backdrop?.addEventListener('click', close);
+        closeBtn?.addEventListener('click', close);
+
+        // Close the drawer once the resident actually navigates —
+        // but let the "About us" dropdown toggle open/closed normally.
+        drawer.querySelectorAll('.nav-link:not(.dropdown-toggle), .dropdown-item').forEach(link => {
+            link.addEventListener('click', close);
+        });
+
+        // If the window is resized past phone width while open, reset it
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) close();
+        });
+    }
+}
+
+
 class NavigationController {
     constructor() {
         this.pages = {
@@ -1047,13 +1144,13 @@ class NavigationController {
                     <div class="doc-divider"></div>
                     <div class="doc-actions">
                         <button class="btn-comment" data-doc-id="${doc.id}">
-                            <i class="fas fa-comment me-1"></i> Comment
+                            <i class="fas fa-comment me-1"></i> <span>Comment</span>
                         </button>
                         <button class="btn-view" data-doc-id="${doc.id}" data-file="${doc.fileUrl || ''}">
-                            <i class="fas fa-eye me-1"></i> View
+                            <i class="fas fa-eye me-1"></i> <span>View</span>
                         </button>
                         <button class="btn-download" data-file="${doc.fileUrl || ''}">
-                            <i class="fas fa-download me-1"></i> Download
+                            <i class="fas fa-download me-1"></i> <span>Download</span>
                         </button>
                     </div>
                 </div>`;
@@ -1077,27 +1174,7 @@ class NavigationController {
                 const docId = parseInt(btn.getAttribute('data-doc-id'));
                 const file  = btn.getAttribute('data-file');
                 const doc   = DOCUMENTS_DATA.find(d => d.id === docId);
-
-                document.getElementById('viewDocCategory').textContent = doc?.category || 'Document';
-                document.getElementById('viewDocTitle').textContent = doc?.title || '';
-                document.getElementById('viewDocMeta').textContent = doc
-                    ? `${doc.barangayName}  ·  Updated ${doc.date}`
-                    : '';
-
-                const frame = document.getElementById('viewDocFrame');
-                const empty = document.getElementById('viewDocEmpty');
-
-                if (file) {
-                    frame.src = file;
-                    frame.style.display = 'block';
-                    empty.style.display = 'none';
-                } else {
-                    frame.src = '';
-                    frame.style.display = 'none';
-                    empty.style.display = 'block';
-                }
-
-                ModalController.open('viewDocumentModal');
+                openDocumentViewer(doc, file);
             });
         });
 
@@ -1134,27 +1211,7 @@ class NavigationController {
                 const docId = parseInt(btn.getAttribute('data-doc-id'));
                 const file  = btn.getAttribute('data-file');
                 const doc   = DOCUMENTS_DATA.find(d => d.id === docId);
-
-                document.getElementById('viewDocCategory').textContent = doc?.category || 'Document';
-                document.getElementById('viewDocTitle').textContent = doc?.title || '';
-                document.getElementById('viewDocMeta').textContent = doc
-                    ? `${doc.barangayName}  ·  Updated ${doc.date}`
-                    : '';
-
-                const frame = document.getElementById('viewDocFrame');
-                const empty = document.getElementById('viewDocEmpty');
-
-                if (file) {
-                    frame.src = file;
-                    frame.style.display = 'block';
-                    empty.style.display = 'none';
-                } else {
-                    frame.src = '';
-                    frame.style.display = 'none';
-                    empty.style.display = 'block';
-                }
-
-                ModalController.open('viewDocumentModal');
+                openDocumentViewer(doc, file);
             });
         });
 
@@ -1266,6 +1323,7 @@ document.addEventListener('DOMContentLoaded', function () {
     AuthController.init();
     AuthController.restoreSession();
     CommentController.init();
+    NavDrawerController.init();
     window.navigationController = new NavigationController();
     console.log('SK Federation Portal - Initialized');
 });
