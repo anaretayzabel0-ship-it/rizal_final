@@ -30,6 +30,31 @@ function getViewerSrc(fileUrl) {
     return fileUrl;
 }
 
+// Files live in Supabase Storage, a different origin from this page, so the
+// <a download> attribute alone can't force a save the way it does for
+// same-origin links — cross-origin clicks just navigate, and the browser
+// decides how to handle that file type (e.g. opening a PDF inline instead
+// of saving it). Supabase Storage has its own fix for this: appending
+// ?download to the object URL makes the server respond with a
+// Content-Disposition: attachment header, which forces a real download
+// regardless of origin.
+function getDownloadUrl(fileUrl) {
+    if (!fileUrl) return fileUrl;
+    const separator = fileUrl.includes('?') ? '&' : '?';
+    return `${fileUrl}${separator}download`;
+}
+
+function triggerFileDownload(fileUrl) {
+    if (!fileUrl) {
+        alert('No file available for this document.');
+        return;
+    }
+    const a = document.createElement('a');
+    a.href = getDownloadUrl(fileUrl);
+    a.download = '';
+    a.click();
+}
+
 // Shared by the main "View" button and the mini "View" buttons on past
 // versions — populates and opens the view-document modal.
 function openDocumentViewer(doc, file) {
@@ -1202,15 +1227,7 @@ class NavigationController {
 
         document.querySelectorAll('.btn-download').forEach(btn => {
             btn.addEventListener('click', () => {
-                const file = btn.getAttribute('data-file');
-                if (file) {
-                    const a = document.createElement('a');
-                    a.href = file;
-                    a.download = '';
-                    a.click();
-                } else {
-                    alert('No file available for this document.');
-                }
+                triggerFileDownload(btn.getAttribute('data-file'));
             });
         });
 
@@ -1240,15 +1257,7 @@ class NavigationController {
         // Mini "download" buttons inside the past-versions list
         document.querySelectorAll('.btn-download-sm').forEach(btn => {
             btn.addEventListener('click', () => {
-                const file = btn.getAttribute('data-file');
-                if (file) {
-                    const a = document.createElement('a');
-                    a.href = file;
-                    a.download = '';
-                    a.click();
-                } else {
-                    alert('No file available for this document.');
-                }
+                triggerFileDownload(btn.getAttribute('data-file'));
             });
         });
     }
