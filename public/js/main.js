@@ -316,7 +316,7 @@ class AuthController {
         }
     }
 
-    static setUser(user) {
+    static setUser(user, options = {}) {
         currentUser = {
             userId:    user.userId,
             firstName: user.firstName,
@@ -331,6 +331,32 @@ class AuthController {
         pill.classList.remove('d-none');
         document.getElementById('userAvatar').textContent = initials;
         document.getElementById('userDisplayName').textContent = user.firstName;
+
+        // Remember the session across visits/reloads, unless we're just
+        // restoring from that same stored session on page load.
+        if (!options.skipPersist) {
+            try {
+                localStorage.setItem('sk_portal_user', JSON.stringify(currentUser));
+            } catch (e) {
+                console.warn('Could not persist session:', e);
+            }
+        }
+    }
+
+    // Called once on page load. Restores currentUser + header UI from
+    // a previously saved session, so the user stays signed in on return
+    // visits instead of having to log in again every time.
+    static restoreSession() {
+        let stored = null;
+        try {
+            stored = JSON.parse(localStorage.getItem('sk_portal_user') || 'null');
+        } catch (e) {
+            stored = null;
+        }
+
+        if (stored && stored.userId) {
+            AuthController.setUser(stored, { skipPersist: true });
+        }
     }
 
     static signOut() {
@@ -339,6 +365,11 @@ class AuthController {
         document.getElementById('headerLoginBtn').style.display = '';
         document.getElementById('headerRegisterBtn').style.display = '';
         document.getElementById('userPill').style.display = 'none';
+        try {
+            localStorage.removeItem('sk_portal_user');
+        } catch (e) {
+            console.warn('Could not clear stored session:', e);
+        }
         AuthController.showToast('You have been signed out.');
     }
 
@@ -1233,6 +1264,7 @@ class NavigationController {
 document.addEventListener('DOMContentLoaded', function () {
     ModalController.init();
     AuthController.init();
+    AuthController.restoreSession();
     CommentController.init();
     window.navigationController = new NavigationController();
     console.log('SK Federation Portal - Initialized');
