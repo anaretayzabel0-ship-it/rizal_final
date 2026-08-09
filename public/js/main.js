@@ -145,6 +145,16 @@ class AuthController {
             AuthController.signOut();
         });
 
+        // Mobile drawer's auth section mirrors the header buttons
+        document.getElementById('drawerRegisterBtn')?.addEventListener('click', () => {
+            AuthController.loadBarangays();
+            ModalController.open('registerModal');
+        });
+
+        document.getElementById('drawerSignOutBtn')?.addEventListener('click', () => {
+            AuthController.signOut();
+        });
+
         document.getElementById('goToRegisterBtn')?.addEventListener('click', () => {
             ModalController.close('loginModal');
             AuthController.loadBarangays();
@@ -377,6 +387,14 @@ class AuthController {
         document.getElementById('userAvatar').textContent = initials;
         document.getElementById('userDisplayName').textContent = user.firstName;
 
+        // Mirror the same state into the mobile drawer's auth section
+        document.getElementById('drawerRegisterBtn').style.display = 'none';
+        const drawerPill = document.getElementById('drawerUserPill');
+        drawerPill.style.display = 'flex';
+        drawerPill.classList.remove('d-none');
+        document.getElementById('drawerUserAvatar').textContent = initials;
+        document.getElementById('drawerUserDisplayName').textContent = user.firstName;
+
         // Remember the session across visits/reloads, unless we're just
         // restoring from that same stored session on page load.
         if (!options.skipPersist) {
@@ -410,6 +428,8 @@ class AuthController {
         document.getElementById('headerLoginBtn').style.display = '';
         document.getElementById('headerRegisterBtn').style.display = '';
         document.getElementById('userPill').style.display = 'none';
+        document.getElementById('drawerRegisterBtn').style.display = '';
+        document.getElementById('drawerUserPill').style.display = 'none';
         try {
             localStorage.removeItem('sk_portal_user');
         } catch (e) {
@@ -900,6 +920,8 @@ class NavDrawerController {
         drawer.querySelectorAll('.nav-link:not(.dropdown-toggle), .dropdown-item').forEach(link => {
             link.addEventListener('click', close);
         });
+        document.getElementById('drawerRegisterBtn')?.addEventListener('click', close);
+        document.getElementById('drawerSignOutBtn')?.addEventListener('click', close);
 
         // If the window is resized past phone width while open, reset it
         window.addEventListener('resize', () => {

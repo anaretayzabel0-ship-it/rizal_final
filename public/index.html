@@ -79,6 +79,20 @@
                         </ul>
                     </li>
                 </ul>
+
+                <!-- Auth entry point inside the drawer — phone widths only -->
+                <div class="nav-drawer-auth" id="navDrawerAuth">
+                    <button class="btn-auth-solid w-100" id="drawerRegisterBtn">
+                        <i class="fas fa-user-plus me-1"></i> <span>Register</span>
+                    </button>
+                    <div class="user-pill nav-drawer-auth__pill d-none" id="drawerUserPill">
+                        <div class="user-avatar" id="drawerUserAvatar">MR</div>
+                        <span id="drawerUserDisplayName">Maria</span>
+                        <button class="btn-signout" id="drawerSignOutBtn" title="Sign out">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>

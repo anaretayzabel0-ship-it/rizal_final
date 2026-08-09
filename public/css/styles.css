@@ -187,6 +187,17 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
+.sk-navbar .navbar-toggler {
+    border: none;
+    box-shadow: none;
+    padding: 0.35rem 0.5rem;
+}
+
+.sk-navbar .navbar-toggler:focus {
+    box-shadow: none;
+    outline: none;
+}
+
 .sk-navbar .navbar-nav .nav-link {
     color: var(--white) !important;
     font-weight: 500;
@@ -213,6 +224,7 @@ body {
 
 /* Mobile nav drawer close button + backdrop — inert outside phone widths */
 .nav-drawer-close { display: none; }
+.nav-drawer-auth { display: none; }
 
 .nav-drawer-backdrop {
     display: none;
@@ -1768,6 +1780,9 @@ body {
     .logo-circle i { font-size: 1.8rem; }
     .header-text .tagline { display: none; }
 
+    /* Sign In / Register move into the drawer on phone — hide them up top */
+    .header-auth { display: none; }
+
     /* Nav — slide-in drawer instead of push-down dropdown */
     .sk-navbar .navbar-collapse {
         position: fixed;
@@ -1807,6 +1822,19 @@ body {
         color: #fff;
         font-size: 0.85rem;
         cursor: pointer;
+    }
+
+    .nav-drawer-auth {
+        display: block;
+        margin-top: 1.2rem;
+        padding-top: 1.2rem;
+        border-top: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .nav-drawer-auth__pill {
+        width: 100%;
+        justify-content: space-between;
+        box-sizing: border-box;
     }
 
     /* Hero */
@@ -1866,7 +1894,6 @@ body {
     .sk-modal { padding: 1.4rem; }
     .sk-modal__header-bar--dark { margin: -1.4rem -1.4rem 1.2rem -1.4rem; padding: 1.4rem 1.4rem; }
 
-    .header-auth { gap: 0.4rem; flex-wrap: wrap; }
     .btn-auth-outline, .btn-auth-solid { padding: 0.4rem 0.85rem; font-size: 0.78rem; }
     .header-text h1 { letter-spacing: 0.5px; }
 
@@ -1897,9 +1924,7 @@ body {
     .logo-circle { width: 44px; height: 44px; }
     .logo-circle i { font-size: 1.4rem; }
 
-    .header-auth { gap: 0.35rem; }
     .btn-auth-outline, .btn-auth-solid { padding: 0.35rem 0.65rem; font-size: 0.7rem; }
-    .btn-auth-outline span, .btn-auth-solid span { display: none; }
 
     .sk-modal { padding: 1.1rem; }
     .sk-modal__title { font-size: 1.1rem; }
