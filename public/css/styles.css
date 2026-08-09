@@ -329,6 +329,56 @@ body {
     box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
 }
 
+.filter-search-row {
+    margin-bottom: 1.4rem;
+}
+
+.filter-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.filter-search-icon {
+    position: absolute;
+    left: 1rem;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+
+.filter-search-input {
+    width: 100%;
+    padding: 0.8rem 2.6rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--white);
+    transition: var(--transition);
+}
+
+.filter-search-input:focus {
+    border-color: var(--primary-red);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+}
+
+.filter-search-clear {
+    position: absolute;
+    right: 0.8rem;
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.3rem;
+    line-height: 1;
+    transition: var(--transition);
+}
+
+.filter-search-clear:hover { color: var(--primary-dark); }
+
 .filter-row {
     display: flex;
     gap: 1.5rem;
@@ -1467,6 +1517,80 @@ body {
 }
 
 .sk-comment-bubble--official .sk-comment-text { margin-bottom: 0; }
+
+.sk-reply-item__actions {
+    margin-top: 0.4rem;
+}
+
+/* Resident follow-up replies, nested one level further under an SK reply */
+.sk-subreply-thread {
+    margin: 0.6rem 0 0 2.6rem;
+    padding-left: 0.8rem;
+    border-left: 2px solid #f0e3e3;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.sk-subreply-item {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+}
+
+.sk-subreply-item .sk-comment-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+}
+
+.sk-subreply-item .sk-comment-bubble {
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+}
+
+.sk-subreply-item .sk-comment-text { margin-bottom: 0; }
+
+/* Inline "reply to this reply" compose box */
+.sk-reply-compose {
+    margin: 0.6rem 0 0 2.6rem;
+    display: none;
+    gap: 0.5rem;
+}
+
+.sk-reply-compose.sk-reply-compose--open {
+    display: flex;
+}
+
+.sk-reply-compose-input {
+    flex: 1;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-family: 'Poppins', sans-serif;
+    resize: none;
+}
+
+.sk-reply-compose-input:focus {
+    border-color: var(--primary-red);
+    outline: none;
+}
+
+.sk-reply-compose-send {
+    background: var(--primary-red);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 0 1rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.sk-reply-compose-send:hover { background: var(--primary-dark); }
 
 /* Compose area */
 .sk-comment-compose {

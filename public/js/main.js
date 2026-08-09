@@ -522,18 +522,50 @@ class CommentController {
                 const skInitials = (skAuthor[0] + (skAuthor.split(' ')[1]?.[0] || '')).toUpperCase();
                 const skTime = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
 
-                return `
-                <div class="sk-reply-item">
-                    <div class="sk-comment-avatar sk-comment-avatar--official">
-                        ${skInitials}
-                    </div>
-                    <div class="sk-comment-bubble sk-comment-bubble--official">
-                        <div class="sk-comment-meta">
-                            <span class="sk-comment-author">${skAuthor}</span>
-                            <span class="sk-comment-badge">SK Barangay</span>
-                            <span class="sk-comment-time">${skTime}</span>
+                // Resident follow-up replies to this specific SK reply
+                const residentReplies = r.resident_replies || [];
+                const subRepliesHtml = residentReplies.map(sub => {
+                    const subAuthor = `${sub.resident?.first_name || ''} ${sub.resident?.last_name || ''}`.trim() || 'Resident';
+                    const subInitials = (subAuthor[0] + (subAuthor.split(' ')[1]?.[0] || '')).toUpperCase();
+                    const subTime = sub.created_at ? new Date(sub.created_at).toLocaleDateString() : '';
+
+                    return `
+                    <div class="sk-subreply-item">
+                        <div class="sk-comment-avatar">${subInitials || '?'}</div>
+                        <div class="sk-comment-bubble">
+                            <div class="sk-comment-meta">
+                                <span class="sk-comment-author">${subAuthor}</span>
+                                <span class="sk-comment-time">${subTime}</span>
+                            </div>
+                            <p class="sk-comment-text">${sub.content || ''}</p>
                         </div>
-                        <p class="sk-comment-text">${r.content || ''}</p>
+                    </div>`;
+                }).join('');
+
+                return `
+                <div>
+                    <div class="sk-reply-item">
+                        <div class="sk-comment-avatar sk-comment-avatar--official">
+                            ${skInitials}
+                        </div>
+                        <div class="sk-comment-bubble sk-comment-bubble--official">
+                            <div class="sk-comment-meta">
+                                <span class="sk-comment-author">${skAuthor}</span>
+                                <span class="sk-comment-badge">SK Barangay</span>
+                                <span class="sk-comment-time">${skTime}</span>
+                            </div>
+                            <p class="sk-comment-text">${r.content || ''}</p>
+                            <div class="sk-reply-item__actions">
+                                <button class="sk-comment-action-btn btn-reply-to-reply" data-reply-id="${r.reply_id}">Reply</button>
+                            </div>
+                        </div>
+                    </div>
+                    ${subRepliesHtml ? `<div class="sk-subreply-thread">${subRepliesHtml}</div>` : ''}
+                    <div class="sk-reply-compose" id="replyCompose-${r.reply_id}">
+                        <textarea class="sk-reply-compose-input" id="replyComposeInput-${r.reply_id}" rows="1" placeholder="Write a reply..."></textarea>
+                        <button class="sk-reply-compose-send" data-reply-id="${r.reply_id}">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
                     </div>
                 </div>`;
             }).join('');
@@ -622,6 +654,58 @@ class CommentController {
         }
     }
 
+    static async submitReplyToReply(replyId) {
+        const textarea = document.getElementById(`replyComposeInput-${replyId}`);
+        const text = textarea?.value.trim();
+
+        // Must be logged in — stash the draft and prompt sign-in
+        if (!currentUser) {
+            draftCommentText = textarea?.value || '';
+            draftCommentDocId = activeDocId;
+            ModalController.close('commentModal');
+            ModalController.open('loginModal');
+            return;
+        }
+
+        if (!text) {
+            textarea.style.border = '2px solid #e74c3c';
+            setTimeout(() => textarea.style.border = '', 1500);
+            return;
+        }
+
+        const sendBtn = document.querySelector(`.sk-reply-compose-send[data-reply-id="${replyId}"]`);
+        if (sendBtn) { sendBtn.disabled = true; sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+
+        try {
+            const response = await fetch('api/post_comment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    website_post_id: activeDocId,
+                    resident_id:     currentUser.userId,
+                    content:         text,
+                    parent_reply_id: replyId
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                AuthController.showToast(result.message || 'Failed to post reply.');
+                return;
+            }
+
+            await CommentController.refreshThread(activeDocId);
+            AuthController.showToast('Reply posted successfully!');
+
+        } catch (error) {
+            console.error('Reply error:', error);
+            AuthController.showToast('Something went wrong. Please try again.');
+        } finally {
+            if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
+        }
+    }
+
     static async refreshThread(docId) {
         try {
             const response = await fetch(`api/get_posts?id=${docId}`);
@@ -654,6 +738,40 @@ class CommentController {
     static init() {
         document.getElementById('submitCommentBtn')?.addEventListener('click', () => {
             CommentController.submitComment();
+        });
+
+        // Delegated handlers: the comment thread is rebuilt on every render,
+        // so bind once on the container instead of per-element.
+        const thread = document.getElementById('commentThread');
+
+        thread?.addEventListener('click', (e) => {
+            const replyToggleBtn = e.target.closest('.btn-reply-to-reply');
+            if (replyToggleBtn) {
+                const replyId = replyToggleBtn.getAttribute('data-reply-id');
+                const compose = document.getElementById(`replyCompose-${replyId}`);
+                if (compose) {
+                    compose.classList.toggle('sk-reply-compose--open');
+                    if (compose.classList.contains('sk-reply-compose--open')) {
+                        document.getElementById(`replyComposeInput-${replyId}`)?.focus();
+                    }
+                }
+                return;
+            }
+
+            const sendBtn = e.target.closest('.sk-reply-compose-send');
+            if (sendBtn) {
+                const replyId = sendBtn.getAttribute('data-reply-id');
+                CommentController.submitReplyToReply(replyId);
+            }
+        });
+
+        // Enter (without Shift) submits the reply, same as the main composer
+        thread?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && e.target.classList.contains('sk-reply-compose-input')) {
+                e.preventDefault();
+                const replyId = e.target.id.replace('replyComposeInput-', '');
+                CommentController.submitReplyToReply(replyId);
+            }
         });
     }
 }
@@ -698,6 +816,26 @@ class NavigationController {
         });
 
         document.getElementById('applyFilterBtn')?.addEventListener('click', () => this.applyFilters());
+
+        // Live search-as-you-type (debounced), across title, document type,
+        // category, year, and barangay.
+        const searchInput = document.getElementById('documentSearchInput');
+        const searchClear = document.getElementById('documentSearchClear');
+        let searchDebounceTimer = null;
+
+        searchInput?.addEventListener('input', () => {
+            if (searchClear) searchClear.style.display = searchInput.value ? 'flex' : 'none';
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => this.applyFilters(), 250);
+        });
+
+        searchClear?.addEventListener('click', () => {
+            if (!searchInput) return;
+            searchInput.value = '';
+            searchClear.style.display = 'none';
+            this.applyFilters();
+            searchInput.focus();
+        });
     }
 
     showPage(pageName) {
@@ -1051,6 +1189,7 @@ class NavigationController {
     applyFilters() {
         const selectedBarangay = document.getElementById('barangayFilter')?.value || 'all';
         const selectedYear     = document.getElementById('yearFilter')?.value     || 'all';
+        const searchQuery      = (document.getElementById('documentSearchInput')?.value || '').trim().toLowerCase();
 
         // Filter from DOCUMENTS_DATA in memory
         const publishedDocs = DOCUMENTS_DATA.filter(d => d.portalStatus === 'published');
@@ -1058,7 +1197,8 @@ class NavigationController {
         const filtered = publishedDocs.filter(doc => {
             const barangayMatch = selectedBarangay === 'all' || String(doc.barangay) === selectedBarangay;
             const yearMatch     = selectedYear     === 'all' || String(doc.year)     === selectedYear;
-            return barangayMatch && yearMatch;
+            const searchMatch   = !searchQuery || this.documentMatchesSearch(doc, searchQuery);
+            return barangayMatch && yearMatch && searchMatch;
         });
 
         // Re-render with filtered results
@@ -1066,6 +1206,22 @@ class NavigationController {
 
         const noResults = document.getElementById('noResultsMessage');
         if (noResults) noResults.style.display = filtered.length === 0 ? 'block' : 'none';
+    }
+
+    // Checks a document's title, document type, category, year, and
+    // barangay name against the search query.
+    documentMatchesSearch(doc, query) {
+        const searchableFields = [
+            doc.title,
+            doc.documentType,
+            doc.category,
+            doc.year,
+            doc.barangayName
+        ];
+
+        return searchableFields.some(field =>
+            String(field || '').toLowerCase().includes(query)
+        );
     }
 }
 

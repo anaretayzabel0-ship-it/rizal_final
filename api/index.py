@@ -565,6 +565,17 @@ def post_comment():
 
     content = (data.get("content") or "").strip()
 
+    # ---- Optional: reply to a specific SK reply (nested resident follow-up) ----
+    parent_reply_id_raw = data.get("parent_reply_id")
+    parent_reply_id = None
+    if parent_reply_id_raw not in (None, "", 0):
+        try:
+            parent_reply_id = int(parent_reply_id_raw)
+        except (TypeError, ValueError):
+            parent_reply_id = None
+        if parent_reply_id is not None and parent_reply_id <= 0:
+            parent_reply_id = None
+
     # ---- Validate ----
     if website_post_id <= 0:
         return jsonify({
@@ -596,6 +607,7 @@ def post_comment():
         "content": content,
         "is_read": False,
         "is_flagged": should_flag,
+        "parent_reply_id": parent_reply_id,
     }
 
     req = urllib.request.Request(
