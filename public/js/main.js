@@ -991,6 +991,7 @@ class NavigationController {
         });
 
         document.getElementById('applyFilterBtn')?.addEventListener('click', () => this.applyFilters());
+        document.getElementById('sortFilter')?.addEventListener('change', () => this.applyFilters());
 
         // Live search-as-you-type (debounced), across title, document type,
         // category, year, and barangay.
@@ -1063,6 +1064,7 @@ class NavigationController {
                 date:         post.published_at
                                 ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                                 : 'N/A',
+                publishedAt:  post.published_at || null,
                 comments:     post.comments            || [],
                 description:  post.description         || '',
                 isFeatured:   false,
@@ -1118,8 +1120,14 @@ class NavigationController {
 
         const result = [];
         groups.forEach(groupDocs => {
-            // Newest year first. Docs without a year fall to the end.
-            const sorted = [...groupDocs].sort((a, b) => (parseInt(b.year) || 0) - (parseInt(a.year) || 0));
+            // Newest upload first (falls back to year if no upload timestamp).
+            // Docs without either fall to the end.
+            const sorted = [...groupDocs].sort((a, b) => {
+                const aTime = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+                const bTime = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+                if (aTime !== bTime) return bTime - aTime;
+                return (parseInt(b.year) || 0) - (parseInt(a.year) || 0);
+            });
             result.push({
                 primary: sorted[0],
                 older:   sorted.slice(1)
@@ -1129,12 +1137,28 @@ class NavigationController {
         return result;
     }
 
-    renderDocuments(docs = DOCUMENTS_DATA) {
+    // Reads the "Sort By" dropdown on the Policy Board page (defaults to newest upload first).
+    getSortMode() {
+        return document.getElementById('sortFilter')?.value || 'newest';
+    }
+
+    // Orders the grouped document cards by their primary (most recent) document's
+    // upload timestamp, so the whole board reflects newest/oldest uploads.
+    sortGroups(groups, sortMode = this.getSortMode()) {
+        const getTime = (doc) => doc.publishedAt ? new Date(doc.publishedAt).getTime() : 0;
+        const sorted = [...groups].sort((a, b) => {
+            const diff = getTime(b.primary) - getTime(a.primary);
+            return sortMode === 'oldest' ? -diff : diff;
+        });
+        return sorted;
+    }
+
+    renderDocuments(docs = DOCUMENTS_DATA, sortMode = this.getSortMode()) {
         const container = document.getElementById('documentsContainer');
         if (!container) return;
         container.innerHTML = '';
 
-        const groups = this.groupDocumentsByType(docs);
+        const groups = this.sortGroups(this.groupDocumentsByType(docs), sortMode);
 
         groups.forEach(({ primary: doc, older }) => {
             const commentCount = Array.isArray(doc.comments) ? doc.comments.length : 0;
@@ -1349,7 +1373,26 @@ class NavigationController {
 // INIT
 // ==========================================
 
+// Live date/time display in the header (upper right)
+function updateHeaderDateTime() {
+    const el = document.getElementById('headerDateTimeText');
+    if (!el) return;
+    const now = new Date();
+    const formatted = now.toLocaleString('en-US', {
+        weekday: 'short',
+        month:   'short',
+        day:     'numeric',
+        year:    'numeric',
+        hour:    'numeric',
+        minute:  '2-digit'
+    });
+    el.textContent = formatted;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+    updateHeaderDateTime();
+    setInterval(updateHeaderDateTime, 1000 * 30); // refresh every 30s
+
     ModalController.init();
     AuthController.init();
     AuthController.restoreSession();

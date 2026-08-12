@@ -94,6 +94,29 @@ body {
     margin: 0;
 }
 
+/* Header right column: date/time + auth buttons */
+.header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.header-datetime {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: #b8d4e3;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.header-datetime i {
+    font-size: 0.75rem;
+}
+
 /* Header auth buttons */
 .header-auth {
     display: flex;
@@ -1704,6 +1727,15 @@ body {
     line-height: 1.6;
 }
 
+.sk-compose-note {
+    margin: 0;
+    padding: 0.4rem 1rem;
+    font-size: 0.78rem;
+    color: #7f8c8d;
+    background: #f8f9fa;
+    border-top: 1px solid #eee;
+}
+
 .sk-compose-footer {
     display: flex;
     align-items: center;
@@ -1768,7 +1800,8 @@ body {
 @media (max-width: 992px) {
     .logo-section { justify-content: center; text-align: center; }
     .header-text { flex-basis: 100%; text-align: center; }
-    .header-auth { flex-basis: 100%; justify-content: center; margin-left: 0 !important; }
+    .header-right { flex-basis: 100%; align-items: center; margin-left: 0 !important; }
+    .header-auth { justify-content: center; }
     .sk-navbar .navbar-nav .nav-link { padding: 0.85rem 1.2rem; }
 }
 
@@ -1782,6 +1815,7 @@ body {
 
     /* Sign In / Register move into the drawer on phone — hide them up top */
     .header-auth { display: none; }
+    .header-datetime { display: none; }
 
     /* Nav — slide-in drawer instead of push-down dropdown */
     .sk-navbar .navbar-collapse {

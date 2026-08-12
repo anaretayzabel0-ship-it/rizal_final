@@ -27,21 +27,27 @@
                     <p class="subtitle">RIZAL, LAGUNA</p>
                     <p class="tagline">Access official documents, reports, and submit your feedback</p>
                 </div>
-                <!-- Auth buttons in header -->
-                <div class="header-auth ms-auto">
-                    <button class="btn-auth-outline" id="headerLoginBtn">
-                        <i class="fas fa-sign-in-alt me-1"></i> <span>Sign In</span>
-                    </button>
-                    <button class="btn-auth-solid" id="headerRegisterBtn">
-                        <i class="fas fa-user-plus me-1"></i> <span>Register</span>
-                    </button>
-                    <!-- Shown when logged in -->
-                    <div class="user-pill d-none" id="userPill">
-                        <div class="user-avatar" id="userAvatar">MR</div>
-                        <span id="userDisplayName">Maria</span>
-                        <button class="btn-signout" id="signOutBtn" title="Sign out">
-                            <i class="fas fa-sign-out-alt"></i>
+                <!-- Date/time + auth buttons in header -->
+                <div class="header-right ms-auto">
+                    <div class="header-datetime" id="headerDateTime">
+                        <i class="fas fa-clock"></i>
+                        <span id="headerDateTimeText"></span>
+                    </div>
+                    <div class="header-auth">
+                        <button class="btn-auth-outline" id="headerLoginBtn">
+                            <i class="fas fa-sign-in-alt me-1"></i> <span>Sign In</span>
                         </button>
+                        <button class="btn-auth-solid" id="headerRegisterBtn">
+                            <i class="fas fa-user-plus me-1"></i> <span>Register</span>
+                        </button>
+                        <!-- Shown when logged in -->
+                        <div class="user-pill d-none" id="userPill">
+                            <div class="user-avatar" id="userAvatar">MR</div>
+                            <span id="userDisplayName">Maria</span>
+                            <button class="btn-signout" id="signOutBtn" title="Sign out">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -162,6 +168,16 @@
                                 </label>
                                 <select class="form-select-custom" id="yearFilter">
                                     <option value="all">All Years</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="fas fa-sort me-1"></i> Sort By
+                                </label>
+                                <select class="form-select-custom" id="sortFilter">
+                                    <option value="newest">Newest Upload</option>
+                                    <option value="oldest">Oldest Upload</option>
                                 </select>
                             </div>
 
@@ -438,6 +454,9 @@
 
                     <div class="sk-compose-box" id="composeBox">
                         <textarea class="sk-compose-textarea" id="commentTextarea" placeholder="Write your comment..." rows="3"></textarea>
+                        <p class="sk-compose-note" id="composeNote">
+                            <i class="fas fa-info-circle me-1"></i> Please keep this respectful.
+                        </p>
                         <div class="sk-compose-footer">
                             <span class="sk-compose-hint" id="composeHint">
                                 <i class="fas fa-shield-alt me-1"></i> Reviewed before publishing
