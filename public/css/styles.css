@@ -1733,13 +1733,14 @@ body {
     font-size: 0.78rem;
     color: #7f8c8d;
     background: #f8f9fa;
-    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    text-align: left;
 }
 
 .sk-compose-footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     padding: 0.5rem 0.8rem;
     background: #f8f9fa;
     border-top: 1px solid #ecf0f1;
