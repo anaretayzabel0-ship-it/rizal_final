@@ -565,7 +565,7 @@ def post_comment():
 
     content = (data.get("content") or "").strip()
 
-    # ---- Optional: reply to a specific SK reply (nested resident follow-up) ----
+    # ---- Optional: reply to a specific SK reply ----
     parent_reply_id_raw = data.get("parent_reply_id")
     parent_reply_id = None
     if parent_reply_id_raw not in (None, "", 0):
@@ -575,6 +575,24 @@ def post_comment():
             parent_reply_id = None
         if parent_reply_id is not None and parent_reply_id <= 0:
             parent_reply_id = None
+
+    # ---- Optional: reply to another resident's comment/reply ----
+    parent_comment_id_raw = data.get("parent_comment_id")
+    parent_comment_id = None
+    if parent_comment_id_raw not in (None, "", 0):
+        try:
+            parent_comment_id = int(parent_comment_id_raw)
+        except (TypeError, ValueError):
+            parent_comment_id = None
+        if parent_comment_id is not None and parent_comment_id <= 0:
+            parent_comment_id = None
+
+    # A reply can target an sk_reply OR a resident_comments row, not both
+    if parent_reply_id is not None and parent_comment_id is not None:
+        return jsonify({
+            "success": False,
+            "message": "Invalid reply target."
+        }), 400
 
     # ---- Validate ----
     if website_post_id <= 0:
@@ -608,6 +626,7 @@ def post_comment():
         "is_read": False,
         "is_flagged": should_flag,
         "parent_reply_id": parent_reply_id,
+        "parent_comment_id": parent_comment_id,
     }
 
     req = urllib.request.Request(
