@@ -11,8 +11,8 @@ Currently implemented:
   POST /api/register
   GET  /api/get_barangays
   GET  /api/get_posts
-  POST /api/post_comment
-  POST /api/post_reply
+  POST /api/post_comment   (top-level comments AND replies at any depth,
+                            via optional parent_id -- see post_comment())
 """
 
 import os
@@ -548,6 +548,30 @@ def get_posts():
 
 @app.route("/api/post_comment", methods=["POST", "OPTIONS"])
 def post_comment():
+    """
+    Single insert path for the unified `comments` table. Any authenticated
+    user (resident or SK) can post a top-level comment or reply to ANY
+    existing comment node, at any depth -- there's no longer a distinction
+    between "comment" and "reply" tables, just a self-referencing parent_id.
+
+    Expected JSON body:
+      {
+        "website_post_id": <int>,          # required for a top-level comment
+        "author_id":        <int>,         # required, the posting user's user_id
+        "content":          <str>,         # required
+        "parent_id":        <int|null>     # optional, comment_id being replied to
+      }
+
+    When parent_id is given, website_post_id is optional -- it's looked up
+    from the parent so a reply always lands on the correct post even if the
+    caller only has the parent's id handy.
+
+    NOTE: the old /api/post_reply route (SK-only, wrote to sk_replies) is
+    gone. It was never called from main.js -- everything already POSTs here
+    -- and the resident_comments/sk_replies split it depended on no longer
+    exists. If anything outside this repo still calls /api/post_reply,
+    point it at this endpoint with parent_id instead of comment_id.
+    """
     if request.method == "OPTIONS":
         return "", 204
 
@@ -558,50 +582,32 @@ def post_comment():
     except (TypeError, ValueError):
         website_post_id = 0
 
+    # Accept author_id (new name) but fall back to resident_id so any
+    # not-yet-updated caller doesn't silently break.
     try:
-        resident_id = int(data.get("resident_id") or 0)
+        author_id = int(data.get("author_id") or data.get("resident_id") or 0)
     except (TypeError, ValueError):
-        resident_id = 0
+        author_id = 0
 
     content = (data.get("content") or "").strip()
 
-    # ---- Optional: reply to a specific SK reply ----
-    parent_reply_id_raw = data.get("parent_reply_id")
-    parent_reply_id = None
-    if parent_reply_id_raw not in (None, "", 0):
+    # ---- Optional: reply to ANY existing comment node (top-level comment,
+    # SK reply, or resident reply -- they're all just rows in `comments` now) ----
+    parent_id_raw = data.get("parent_id")
+    if parent_id_raw in (None, "", 0):
+        # Back-compat: accept the old field names as an alias for parent_id.
+        parent_id_raw = data.get("parent_comment_id") or data.get("parent_reply_id")
+    parent_id = None
+    if parent_id_raw not in (None, "", 0):
         try:
-            parent_reply_id = int(parent_reply_id_raw)
+            parent_id = int(parent_id_raw)
         except (TypeError, ValueError):
-            parent_reply_id = None
-        if parent_reply_id is not None and parent_reply_id <= 0:
-            parent_reply_id = None
-
-    # ---- Optional: reply to another resident's comment/reply ----
-    parent_comment_id_raw = data.get("parent_comment_id")
-    parent_comment_id = None
-    if parent_comment_id_raw not in (None, "", 0):
-        try:
-            parent_comment_id = int(parent_comment_id_raw)
-        except (TypeError, ValueError):
-            parent_comment_id = None
-        if parent_comment_id is not None and parent_comment_id <= 0:
-            parent_comment_id = None
-
-    # A reply can target an sk_reply OR a resident_comments row, not both
-    if parent_reply_id is not None and parent_comment_id is not None:
-        return jsonify({
-            "success": False,
-            "message": "Invalid reply target."
-        }), 400
+            parent_id = None
+        if parent_id is not None and parent_id <= 0:
+            parent_id = None
 
     # ---- Validate ----
-    if website_post_id <= 0:
-        return jsonify({
-            "success": False,
-            "message": "Invalid post."
-        }), 400
-
-    if resident_id <= 0:
+    if author_id <= 0:
         return jsonify({
             "success": False,
             "message": "You must be logged in to comment."
@@ -613,20 +619,55 @@ def post_comment():
             "message": "Comment cannot be empty."
         }), 400
 
+    # ---- If replying, resolve website_post_id from the parent when the
+    # caller didn't send one, and confirm the parent actually exists ----
+    if parent_id is not None:
+        parent_lookup_url = (
+            f"{SUPABASE_URL.rstrip('/')}/rest/v1/comments"
+            f"?comment_id=eq.{parent_id}&select=website_post_id"
+        )
+        parent_req = urllib.request.Request(
+            parent_lookup_url,
+            method="GET",
+            headers={
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+            },
+        )
+        try:
+            with urllib.request.urlopen(parent_req) as resp:
+                parent_rows = json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.HTTPError, urllib.error.URLError):
+            parent_rows = []
+
+        if not parent_rows:
+            return jsonify({
+                "success": False,
+                "message": "Invalid reply target."
+            }), 400
+
+        if website_post_id <= 0:
+            website_post_id = parent_rows[0]["website_post_id"]
+
+    if website_post_id <= 0:
+        return jsonify({
+            "success": False,
+            "message": "Invalid post."
+        }), 400
+
     # ---- Auto-flag negative/toxic comments for officials to review ----
     should_flag = should_flag_comment(content)
 
     # ---- Insert comment into Supabase ----
-    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/resident_comments"
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/comments"
 
     new_comment = {
         "website_post_id": website_post_id,
-        "resident_id": resident_id,
+        "author_id": author_id,
+        "parent_id": parent_id,
         "content": content,
         "is_read": False,
         "is_flagged": should_flag,
-        "parent_reply_id": parent_reply_id,
-        "parent_comment_id": parent_comment_id,
     }
 
     req = urllib.request.Request(
@@ -679,118 +720,6 @@ def post_comment():
         "success": True,
         "message": "Comment posted successfully.",
         "comment": comment[0]
-    }), 200
-
-
-@app.route("/api/post_reply", methods=["POST", "OPTIONS"])
-def post_reply():
-    """
-    SK official replies to a resident comment.
-
-    Expected JSON body:
-      {
-        "comment_id":  <int>,   # the resident_comments row being replied to
-        "replied_by":  <int>,   # user_id of the SK official
-        "content":     <str>
-      }
-
-    Inserts a row into sk_replies and returns the created row.
-    """
-    if request.method == "OPTIONS":
-        return "", 204
-
-    data = request.get_json(silent=True) or {}
-
-    try:
-        comment_id = int(data.get("comment_id") or 0)
-    except (TypeError, ValueError):
-        comment_id = 0
-
-    try:
-        replied_by = int(data.get("replied_by") or 0)
-    except (TypeError, ValueError):
-        replied_by = 0
-
-    content = (data.get("content") or "").strip()
-
-    # ---- Validate ----
-    if comment_id <= 0:
-        return jsonify({
-            "success": False,
-            "message": "Invalid comment."
-        }), 400
-
-    if replied_by <= 0:
-        return jsonify({
-            "success": False,
-            "message": "You must be logged in to reply."
-        }), 401
-
-    if not content:
-        return jsonify({
-            "success": False,
-            "message": "Reply cannot be empty."
-        }), 400
-
-    # ---- Insert reply into Supabase ----
-    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/sk_replies"
-
-    new_reply = {
-        "comment_id": comment_id,
-        "replied_by": replied_by,
-        "content": content,
-    }
-
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(new_reply).encode("utf-8"),
-        method="POST",
-        headers={
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Prefer": "return=representation",
-        },
-    )
-
-    try:
-        with urllib.request.urlopen(req) as resp:
-            status_code = resp.status
-            response_body = resp.read().decode("utf-8")
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8")
-        try:
-            details = json.loads(error_body)
-        except json.JSONDecodeError:
-            details = error_body
-        return jsonify({
-            "success": False,
-            "message": "Failed to post reply.",
-            "details": details
-        }), 500
-    except urllib.error.URLError as e:
-        return jsonify({
-            "success": False,
-            "message": f"Request failed: {e.reason}"
-        }), 500
-
-    if status_code != 201:
-        try:
-            details = json.loads(response_body)
-        except json.JSONDecodeError:
-            details = response_body
-        return jsonify({
-            "success": False,
-            "message": "Failed to post reply.",
-            "details": details
-        }), 500
-
-    reply = json.loads(response_body)
-
-    return jsonify({
-        "success": True,
-        "message": "Reply posted successfully.",
-        "reply": reply[0]
     }), 200
 
 

@@ -627,100 +627,68 @@ class CommentController {
             return;
         }
 
-        thread.innerHTML = comments.map((c, idx) => {
-            // Support both old mock format and new API format
-            const author   = c.author   || `${c.resident?.first_name || ''} ${c.resident?.last_name || ''}`.trim() || 'Anonymous';
-            const initials = c.initials || (author !== 'Anonymous' ? (author[0] + (author.split(' ')[1]?.[0] || '')).toUpperCase() : null);
-            const text     = c.text     || c.content || '';
-            const time     = c.time     || new Date(c.created_at).toLocaleDateString();
-            const isGuest  = c.isGuest  || false;
-            const likes    = c.likes    || 0;
-            const replies  = c.replies  || [];
-
-            // Recursively render replies at any depth. Each node from
-            // build_comment_replies() is tagged 'resident_reply' or 'sk_reply',
-            // and residents can now reply to EITHER kind of node.
-            const repliesHtml = CommentController.renderReplyNodes(replies);
-
-            return `
+        thread.innerHTML = comments.map((c, idx) => `
             <div>
-                <div class="sk-comment-item">
-                    <div class="sk-comment-avatar ${isGuest ? 'sk-comment-avatar--ghost' : ''}">
-                        ${isGuest ? '<i class="fas fa-user-secret"></i>' : (initials || '?')}
-                    </div>
-                    <div class="sk-comment-bubble">
-                        <div class="sk-comment-meta">
-                            <span class="sk-comment-author">${author}</span>
-                            ${c.isOfficial ? '<span class="sk-comment-badge">Official</span>' : ''}
-                            <span class="sk-comment-time">${time}</span>
-                        </div>
-                        <p class="sk-comment-text">${text}</p>
-                        <div class="sk-comment-actions">
-                            <button class="sk-comment-action-btn">
-                                <i class="fas fa-thumbs-up"></i> ${likes}
-                            </button>
-                            <button class="sk-comment-action-btn btn-reply-to-reply" data-target-type="resident" data-target-id="${c.comment_id}">Reply</button>
-                        </div>
-                    </div>
-                </div>
-                ${CommentController.renderReplyCompose('resident', c.comment_id)}
-                ${repliesHtml ? `<div class="sk-reply-thread">${repliesHtml}</div>` : ''}
+                ${CommentController.renderCommentNode(c, false)}
                 ${idx < comments.length - 1 ? '<div class="sk-comment-divider"></div>' : ''}
-            </div>`;
-        }).join('');
+            </div>`
+        ).join('');
     }
 
-    // Renders one level of the reply tree and recurses into `node.replies`.
-    // node.type is 'sk_reply' (from sk_replies, key = reply_id, target = parent_reply_id)
-    // or 'resident_reply' (from resident_comments, key = comment_id, target = parent_comment_id).
-    static renderReplyNodes(nodes) {
-        if (!nodes || !nodes.length) return '';
+    // Renders one comment node (top-level or any depth of reply -- every
+    // node from build_comment_tree() has the same shape: comment_id,
+    // content, created_at, author{first_name,last_name,role}, replies) and
+    // recurses into node.replies. Any authenticated user, resident or SK,
+    // can reply to any node, so there's no branching on where it came from.
+    static renderCommentNode(node, isReply) {
+        const personObj = node.author;
+        const author = `${personObj?.first_name || ''} ${personObj?.last_name || ''}`.trim() || 'Resident';
+        const initials = (author[0] + (author.split(' ')[1]?.[0] || '')).toUpperCase();
+        const time = node.created_at ? new Date(node.created_at).toLocaleDateString() : '';
 
-        return nodes.map(node => {
-            const isSk = node.type === 'sk_reply';
+        // Anyone whose role isn't 'resident' is shown with the official badge.
+        const isOfficial = !!personObj?.role && personObj.role !== 'resident';
 
-            const personObj = isSk ? node.replied_by : node.resident;
-            const author = `${personObj?.first_name || ''} ${personObj?.last_name || ''}`.trim() || (isSk ? 'SK Barangay' : 'Resident');
-            const initials = (author[0] + (author.split(' ')[1]?.[0] || '')).toUpperCase();
-            const time = node.created_at ? new Date(node.created_at).toLocaleDateString() : '';
+        const targetId = node.comment_id;
+        const childReplies = (node.replies || []).map(child => CommentController.renderCommentNode(child, true)).join('');
 
-            const targetType = isSk ? 'sk' : 'resident';
-            const targetId = isSk ? node.reply_id : node.comment_id;
+        const itemClass = isReply
+            ? `sk-reply-item ${isOfficial ? '' : 'sk-reply-item--resident'}`
+            : 'sk-comment-item';
 
-            const childReplies = CommentController.renderReplyNodes(node.replies);
-
-            return `
-            <div>
-                <div class="sk-reply-item ${isSk ? '' : 'sk-reply-item--resident'}">
-                    <div class="sk-comment-avatar ${isSk ? 'sk-comment-avatar--official' : ''}">
-                        ${initials || '?'}
+        return `
+            <div class="${itemClass}">
+                <div class="sk-comment-avatar ${isOfficial ? 'sk-comment-avatar--official' : ''}">
+                    ${initials || '?'}
+                </div>
+                <div class="sk-comment-bubble ${isOfficial ? 'sk-comment-bubble--official' : ''}">
+                    <div class="sk-comment-meta">
+                        <span class="sk-comment-author">${author}</span>
+                        ${isOfficial ? '<span class="sk-comment-badge">Official</span>' : ''}
+                        <span class="sk-comment-time">${time}</span>
                     </div>
-                    <div class="sk-comment-bubble ${isSk ? 'sk-comment-bubble--official' : ''}">
-                        <div class="sk-comment-meta">
-                            <span class="sk-comment-author">${author}</span>
-                            ${isSk ? '<span class="sk-comment-badge">SK Barangay</span>' : ''}
-                            <span class="sk-comment-time">${time}</span>
-                        </div>
-                        <p class="sk-comment-text">${node.content || ''}</p>
-                        <div class="sk-reply-item__actions">
-                            <button class="sk-comment-action-btn btn-reply-to-reply" data-target-type="${targetType}" data-target-id="${targetId}">Reply</button>
-                        </div>
+                    <p class="sk-comment-text">${node.content || ''}</p>
+                    <div class="${isReply ? 'sk-reply-item__actions' : 'sk-comment-actions'}">
+                        ${isReply ? '' : `
+                        <button class="sk-comment-action-btn">
+                            <i class="fas fa-thumbs-up"></i> ${node.likes || 0}
+                        </button>`}
+                        <button class="sk-comment-action-btn btn-reply-to-reply" data-target-id="${targetId}">Reply</button>
                     </div>
                 </div>
-                ${CommentController.renderReplyCompose(targetType, targetId)}
-                ${childReplies ? `<div class="sk-subreply-thread">${childReplies}</div>` : ''}
-            </div>`;
-        }).join('');
+            </div>
+            ${CommentController.renderReplyCompose(targetId)}
+            ${childReplies ? `<div class="${isReply ? 'sk-subreply-thread' : 'sk-reply-thread'}">${childReplies}</div>` : ''}`;
     }
 
-    // The little textarea+send box that toggles open under a "Reply" button.
-    // Keyed by "<type>-<id>" so a resident reply and an sk reply never collide.
-    static renderReplyCompose(targetType, targetId) {
-        const key = `${targetType}-${targetId}`;
+    // The little textarea+send box that toggles open under a "Reply"
+    // button. Keyed by comment_id -- every comment, at any depth, has
+    // exactly one id now, so there's no need to namespace by type.
+    static renderReplyCompose(targetId) {
         return `
-        <div class="sk-reply-compose" id="replyCompose-${key}">
-            <textarea class="sk-reply-compose-input" id="replyComposeInput-${key}" rows="1" placeholder="Write a reply..."></textarea>
-            <button class="sk-reply-compose-send" data-target-type="${targetType}" data-target-id="${targetId}">
+        <div class="sk-reply-compose" id="replyCompose-${targetId}">
+            <textarea class="sk-reply-compose-input" id="replyComposeInput-${targetId}" rows="1" placeholder="Write a reply..."></textarea>
+            <button class="sk-reply-compose-send" data-target-id="${targetId}">
                 <i class="fas fa-paper-plane"></i>
             </button>
         </div>`;
@@ -755,7 +723,7 @@ class CommentController {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     website_post_id: activeDocId,
-                    resident_id:     currentUser.userId,
+                    author_id:       currentUser.userId,
                     content:         text
                 })
             });
@@ -783,9 +751,8 @@ class CommentController {
         }
     }
 
-    static async submitReplyToReply(targetType, targetId) {
-        const key = `${targetType}-${targetId}`;
-        const textarea = document.getElementById(`replyComposeInput-${key}`);
+    static async submitReplyToReply(targetId) {
+        const textarea = document.getElementById(`replyComposeInput-${targetId}`);
         const text = textarea?.value.trim();
 
         // Must be logged in — stash the draft and prompt sign-in
@@ -803,21 +770,17 @@ class CommentController {
             return;
         }
 
-        const sendBtn = document.querySelector(`.sk-reply-compose-send[data-target-type="${targetType}"][data-target-id="${targetId}"]`);
+        const sendBtn = document.querySelector(`.sk-reply-compose-send[data-target-id="${targetId}"]`);
         if (sendBtn) { sendBtn.disabled = true; sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
 
-        // Replying to an SK reply -> parent_reply_id.
-        // Replying to a resident's comment/reply -> parent_comment_id.
+        // Any comment node -- top-level or a reply at any depth -- is
+        // targeted the same way now: parent_id.
         const body = {
             website_post_id: activeDocId,
-            resident_id:     currentUser.userId,
-            content:         text
+            author_id:       currentUser.userId,
+            content:         text,
+            parent_id:       targetId
         };
-        if (targetType === 'sk') {
-            body.parent_reply_id = targetId;
-        } else {
-            body.parent_comment_id = targetId;
-        }
 
         try {
             const response = await fetch('api/post_comment', {
@@ -885,13 +848,12 @@ class CommentController {
         thread?.addEventListener('click', (e) => {
             const replyToggleBtn = e.target.closest('.btn-reply-to-reply');
             if (replyToggleBtn) {
-                const targetType = replyToggleBtn.getAttribute('data-target-type');
                 const targetId = replyToggleBtn.getAttribute('data-target-id');
-                const compose = document.getElementById(`replyCompose-${targetType}-${targetId}`);
+                const compose = document.getElementById(`replyCompose-${targetId}`);
                 if (compose) {
                     compose.classList.toggle('sk-reply-compose--open');
                     if (compose.classList.contains('sk-reply-compose--open')) {
-                        document.getElementById(`replyComposeInput-${targetType}-${targetId}`)?.focus();
+                        document.getElementById(`replyComposeInput-${targetId}`)?.focus();
                     }
                 }
                 return;
@@ -899,9 +861,8 @@ class CommentController {
 
             const sendBtn = e.target.closest('.sk-reply-compose-send');
             if (sendBtn) {
-                const targetType = sendBtn.getAttribute('data-target-type');
                 const targetId = sendBtn.getAttribute('data-target-id');
-                CommentController.submitReplyToReply(targetType, targetId);
+                CommentController.submitReplyToReply(targetId);
             }
         });
 
@@ -909,8 +870,8 @@ class CommentController {
         thread?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey && e.target.classList.contains('sk-reply-compose-input')) {
                 e.preventDefault();
-                const [targetType, targetId] = e.target.id.replace('replyComposeInput-', '').split('-');
-                CommentController.submitReplyToReply(targetType, targetId);
+                const targetId = e.target.id.replace('replyComposeInput-', '');
+                CommentController.submitReplyToReply(targetId);
             }
         });
     }
