@@ -88,11 +88,20 @@ def classify_sentiment(text):
         return None, None
     try:
         vec = sentiment_vectorizer.transform([text])
-        label = sentiment_model.predict(vec)[0]
+        raw_label = sentiment_model.predict(vec)[0]
         proba = sentiment_model.predict_proba(vec)[0]
         # predict_proba's column order follows model.classes_
-        class_index = list(sentiment_model.classes_).index(label)
+        class_index = list(sentiment_model.classes_).index(raw_label)
         score = float(proba[class_index])
+
+        # Guard against a mismatched/old model on disk (e.g. still binary
+        # 0/1 instead of "positive"/"neutral"/"negative"). Only pass through
+        # a value the sentiment_label CHECK constraint actually accepts --
+        # anything else degrades to (None, None) rather than crashing the
+        # request downstream when it hits json.dumps() or the DB insert.
+        label = str(raw_label)
+        if label not in ("positive", "neutral", "negative"):
+            return None, None
         return label, score
     except Exception:
         return None, None
@@ -708,9 +717,22 @@ def post_comment():
         "sentiment_score": sentiment_score,
     }
 
+    # Encode defensively -- classify_sentiment() already guards against
+    # non-JSON-safe types, but this is a second line of defense so a
+    # serialization bug here returns clean JSON to the frontend instead of
+    # Flask's raw HTML 500 page (which is what broke main.js's response.json()).
+    try:
+        body = json.dumps(new_comment).encode("utf-8")
+    except TypeError as e:
+        return jsonify({
+            "success": False,
+            "message": "Failed to prepare comment for saving.",
+            "details": str(e)
+        }), 500
+
     req = urllib.request.Request(
         url,
-        data=json.dumps(new_comment).encode("utf-8"),
+        data=body,
         method="POST",
         headers={
             "Content-Type": "application/json",
