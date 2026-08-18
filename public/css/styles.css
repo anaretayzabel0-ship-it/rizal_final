@@ -216,6 +216,10 @@ body {
     padding: 0.35rem 0.5rem;
 }
 
+.sk-navbar .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
 .sk-navbar .navbar-toggler:focus {
     box-shadow: none;
     outline: none;
@@ -1853,6 +1857,34 @@ body {
     }
     #viewDocumentModal #viewDocFrame {
         height: 100% !important;
+    }
+
+    /* Comment modal: same edge-to-edge treatment as the document viewer
+       above. Scoped to #commentModal only. Unlike the viewer's single
+       iframe, this modal's content (thread + compose box) can be tall, so
+       the body scrolls internally instead of the whole modal. */
+    #commentModal {
+        padding: env(safe-area-inset-top, 0.75rem) 0 0 0;
+    }
+    #commentModal .sk-modal--lg {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    #commentModal .sk-comment-modal__header {
+        border-radius: 0;
+        flex-shrink: 0;
+    }
+    #commentModal .sk-comment-modal__body {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
     }
 
     /* Nav — slide-in drawer instead of push-down dropdown */
