@@ -1824,8 +1824,14 @@ body {
     /* Document viewer: fill the screen edge-to-edge instead of floating
        as a white rounded card with visible margins around it. Scoped to
        #viewDocumentModal only -- the comment modal and other modals keep
-       their normal centered-card look. */
-    #viewDocumentModal { padding: 0; }
+       their normal centered-card look.
+       Top gets a small safe-area-aware buffer instead of 0 -- flush top
+       clips the close button under the browser/in-app-browser's own
+       toolbar (address bar, Messenger's in-app chrome, etc). Sides and
+       bottom stay fully flush. */
+    #viewDocumentModal {
+        padding: env(safe-area-inset-top, 0.75rem) 0 0 0;
+    }
     #viewDocumentModal .sk-modal--viewer {
         width: 100%;
         height: 100%;
