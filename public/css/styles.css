@@ -1821,6 +1821,33 @@ body {
     .header-auth { display: none; }
     .header-datetime { display: none; }
 
+    /* Document viewer: fill the screen edge-to-edge instead of floating
+       as a white rounded card with visible margins around it. Scoped to
+       #viewDocumentModal only -- the comment modal and other modals keep
+       their normal centered-card look. */
+    #viewDocumentModal { padding: 0; }
+    #viewDocumentModal .sk-modal--viewer {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    #viewDocumentModal .sk-comment-modal__header {
+        border-radius: 0;
+        flex-shrink: 0;
+    }
+    #viewDocumentModal .sk-comment-modal__body {
+        flex: 1;
+        min-height: 0;
+    }
+    #viewDocumentModal #viewDocFrame {
+        height: 100% !important;
+    }
+
     /* Nav — slide-in drawer instead of push-down dropdown */
     .sk-navbar .navbar-collapse {
         position: fixed;
