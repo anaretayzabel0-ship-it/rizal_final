@@ -39,10 +39,17 @@ SUPABASE_KEY = os.environ.get(
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-# ---- Sentiment classifier (for auto-flagging negative/toxic comments) ----
+# ---- Sentiment classifier (single 3-class model: positive/neutral/negative) ----
 # vectorizer.pkl / sentiment_model.pkl must sit alongside this file (api/).
 # Loaded once at cold start, reused across requests within the same
 # serverless function instance.
+#
+# This ONE model now drives two things:
+#   1. sentiment_label / sentiment_score -- stored on every comment for
+#      analytics (e.g. "what's the overall mood on this post?").
+#   2. is_flagged -- derived from this same model's output (negative label
+#      + confidence above NEGATIVE_FLAG_THRESHOLD), rather than a separate
+#      binary model. See classify_sentiment() and should_flag_comment().
 _SENTIMENT_DIR = os.path.dirname(os.path.abspath(__file__))
 sentiment_vectorizer = None
 sentiment_model = None
@@ -53,21 +60,42 @@ try:
         sentiment_model = pickle.load(f)
 except FileNotFoundError:
     # Sentiment model files not deployed yet -- comments will simply not
-    # be auto-flagged until vectorizer.pkl / sentiment_model.pkl are added.
+    # be scored or auto-flagged until vectorizer.pkl / sentiment_model.pkl
+    # are added.
     pass
 
+# How confident the model must be that a comment is "negative" before it
+# gets auto-flagged for SK review. Lower = more sensitive (more flags,
+# more false positives on blunt-but-fair criticism). Higher = more
+# conservative. Tune this based on what you observe in practice --
+# no retraining needed to adjust it.
+NEGATIVE_FLAG_THRESHOLD = 0.70
 
-def is_comment_negative(text):
-    """Returns True if the ML model classifies this comment as negative/toxic."""
+
+def classify_sentiment(text):
+    """
+    Runs the 3-class model on `text`.
+
+    Returns (label, score):
+      label -- one of "positive", "neutral", "negative", or None if the
+               model isn't loaded or scoring failed.
+      score -- the model's confidence (0.0-1.0) in that label, or None.
+
+    Never raises -- a scoring failure degrades to (None, None) so it can
+    never block a comment from posting.
+    """
     if sentiment_vectorizer is None or sentiment_model is None:
-        return False
+        return None, None
     try:
         vec = sentiment_vectorizer.transform([text])
-        prediction = sentiment_model.predict(vec)[0]
-        return bool(prediction == 1)
+        label = sentiment_model.predict(vec)[0]
+        proba = sentiment_model.predict_proba(vec)[0]
+        # predict_proba's column order follows model.classes_
+        class_index = list(sentiment_model.classes_).index(label)
+        score = float(proba[class_index])
+        return label, score
     except Exception:
-        # Never let a scoring failure block a comment from posting.
-        return False
+        return None, None
 
 
 # ---- Keyword blocklist (guarantees a flag regardless of sentence context) ----
@@ -93,9 +121,16 @@ def contains_flagged_word(text):
     return False
 
 
-def should_flag_comment(text):
-    """Combined check: keyword blocklist (guaranteed) OR ML model (contextual)."""
-    return contains_flagged_word(text) or is_comment_negative(text)
+def should_flag_comment(text, label, score):
+    """
+    Combined check: keyword blocklist (guaranteed) OR the sentiment
+    model's negative label above NEGATIVE_FLAG_THRESHOLD confidence.
+    Takes the already-computed (label, score) from classify_sentiment()
+    so the model only runs once per comment, not twice.
+    """
+    if contains_flagged_word(text):
+        return True
+    return label == "negative" and score is not None and score >= NEGATIVE_FLAG_THRESHOLD
 
 
 @app.after_request
@@ -655,8 +690,9 @@ def post_comment():
             "message": "Invalid post."
         }), 400
 
-    # ---- Auto-flag negative/toxic comments for officials to review ----
-    should_flag = should_flag_comment(content)
+    # ---- Run the sentiment model once, use it for both flagging and analytics ----
+    sentiment_label, sentiment_score = classify_sentiment(content)
+    should_flag = should_flag_comment(content, sentiment_label, sentiment_score)
 
     # ---- Insert comment into Supabase ----
     url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/comments"
@@ -668,6 +704,8 @@ def post_comment():
         "content": content,
         "is_read": False,
         "is_flagged": should_flag,
+        "sentiment_label": sentiment_label,
+        "sentiment_score": sentiment_score,
     }
 
     req = urllib.request.Request(
