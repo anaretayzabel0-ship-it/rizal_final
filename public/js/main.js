@@ -24,9 +24,23 @@ function isPhoneViewport() {
 // so we only do this on phone widths; desktop keeps the direct file URL.
 function getViewerSrc(fileUrl) {
     if (!fileUrl) return '';
+
     if (isPhoneViewport()) {
-        return `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(fileUrl)}`;
+        // Check if the URL belongs to an image (png, jpg, jpeg, gif)
+        const isImage = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(fileUrl);
+        
+        if (isImage) {
+            // Mobile browsers can render images perfectly fine in an iframe.
+            // No need for Google Docs Viewer here!
+            return fileUrl; 
+        } else {
+            // For PDFs, we still need Google Viewer to prevent auto-downloading.
+            // Note: Your Supabase file URL MUST be publicly accessible!
+            return `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(fileUrl)}`;
+        }
     }
+    
+    // Desktop browsers handle everything naturally
     return fileUrl;
 }
 

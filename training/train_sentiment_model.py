@@ -1,36 +1,50 @@
 """
 train_sentiment_model.py
 
-Trains a lightweight TF-IDF + Logistic Regression sentiment classifier
-for Filipino/Taglish comments, aimed at flagging negative/toxic comments
-for review by SK officials.
+Trains the TF-IDF + Logistic Regression sentiment classifier used by
+should_flag_comment() / is_comment_negative() in api/index.py.
 
-This is a STARTER dataset (hand-written, ~120 examples) meant to get a
-working prototype live. For production-quality accuracy, replace/expand
-TRAINING_DATA below with real labeled comments collected from your own
-site over time -- the more real examples, the better it will generalize.
+This version merges two sources of training data:
+  1. Your original hand-written barangay-specific examples (BARANGAY_SEED_DATA
+     below) -- small, but anchored to your actual domain (SK officials,
+     budget reports, programs for kabataan).
+  2. ccosme/SentiTaglishProductsAndServices, a free, CC-BY-4.0 licensed,
+     10,510-row Taglish dataset manually labeled by 3 human annotators
+     (Fleiss' kappa 0.82 / Krippendorff's alpha 0.83 -- strong agreement).
+     https://huggingface.co/datasets/ccosme/SentiTaglishProductsAndServices
+     It's product/service reviews, not civic comments, but it's the same
+     Taglish code-switching style and gives the model far more vocabulary
+     and phrasing than 120 examples alone ever could.
 
-Run this locally (not on Vercel):
-    pip install scikit-learn
+Run this locally (NOT on Vercel):
+    pip install scikit-learn datasets pandas
     python train_sentiment_model.py
 
 Produces two files:
     vectorizer.pkl
     sentiment_model.pkl
-Copy both into your api/ folder and deploy alongside index.py.
+
+Copy BOTH into your api/ folder (replacing the old ones) and deploy
+alongside index.py. Nothing else changes -- should_flag_comment() just
+loads whatever .pkl files are sitting next to it.
+
+The downloaded dataset itself (via load_dataset(), cached by Hugging Face
+under ~/.cache/huggingface) never needs to be committed to your repo or
+deployed -- it's a training-time ingredient only.
 """
 
 import pickle
+from datasets import load_dataset
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 
 # ============================================================
-# STARTER TRAINING DATA
-# label: 0 = positive/neutral (not flagged), 1 = negative/toxic (flagged)
+# 1. YOUR BARANGAY-SPECIFIC SEED DATA (kept from the original script)
+#    label: 0 = positive/neutral (not flagged), 1 = negative/toxic (flagged)
 # ============================================================
-TRAINING_DATA = [
+BARANGAY_SEED_DATA = [
     # ---- Positive / neutral (0) ----
     ("Salamat po sa inyong serbisyo, malaking tulong po ito sa amin.", 0),
     ("Ang galing ng proyektong ito, sana po magpatuloy.", 0),
@@ -105,10 +119,40 @@ TRAINING_DATA = [
     ("Nagagalit ako sa kapabayaan niyong ipinapakita.", 1),
     ("Grabe ka-duwag, ayaw sagutin ang mga tanong namin.", 1),
     ("Tuta lang kayo ng mga politiko, wala kayong sariling pananaw.", 1),
-        ("Bobo", 1),
-        ("Tanga", 1),
-
+    ("Bobo", 1),
+    ("Tanga", 1),
 ]
+
+# ============================================================
+# 2. DOWNLOAD + REMAP: ccosme/SentiTaglishProductsAndServices
+#    Original label encoding: 1=Negative, 2=Neutral, 3=Positive, 4=Mixed
+#    Remapped to your binary scheme:
+#      Negative, Mixed        -> 1 (flagged)
+#      Neutral,  Positive     -> 0 (not flagged)
+# ============================================================
+print("Downloading ccosme/SentiTaglishProductsAndServices ...")
+hf_dataset = load_dataset("ccosme/SentiTaglishProductsAndServices", split="train")
+
+LABEL_MAP = {
+    1: 1,  # Negative -> flagged
+    2: 0,  # Neutral  -> not flagged
+    3: 0,  # Positive -> not flagged
+    4: 1,  # Mixed    -> flagged (contains negative content worth reviewing)
+}
+
+hf_examples = [
+    (row["review"], LABEL_MAP[row["sentiment"]])
+    for row in hf_dataset
+    if row["review"] and row["review"].strip()
+]
+print(f"Loaded {len(hf_examples)} examples from the HF dataset.")
+
+# ============================================================
+# 3. MERGE + TRAIN
+# ============================================================
+TRAINING_DATA = BARANGAY_SEED_DATA + hf_examples
+print(f"Total training examples: {len(TRAINING_DATA)} "
+      f"({len(BARANGAY_SEED_DATA)} barangay-specific + {len(hf_examples)} from HF dataset)")
 
 TEXTS = [t for t, _ in TRAINING_DATA]
 LABELS = [l for _, l in TRAINING_DATA]
@@ -121,7 +165,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 vectorizer = TfidfVectorizer(
     lowercase=True,
     ngram_range=(1, 2),   # unigrams + bigrams help catch short phrases like "walang kwenta"
-    min_df=1,
+    min_df=2,             # a term must appear in >=2 docs now that the corpus is much bigger
 )
 X_train_vec = vectorizer.fit_transform(X_train)
 X_test_vec = vectorizer.transform(X_test)
@@ -132,7 +176,7 @@ model.fit(X_train_vec, y_train)
 
 # ---- Evaluate ----
 preds = model.predict(X_test_vec)
-print(f"Test accuracy: {accuracy_score(y_test, preds):.2f}")
+print(f"\nTest accuracy: {accuracy_score(y_test, preds):.2f}")
 print(classification_report(y_test, preds, target_names=["not_flagged", "flagged"]))
 
 # ---- Save ----
@@ -143,12 +187,14 @@ with open("sentiment_model.pkl", "wb") as f:
     pickle.dump(model, f)
 
 print("\nSaved vectorizer.pkl and sentiment_model.pkl")
+print("Copy both into api/ (replacing the old ones) and deploy.")
 
-# ---- Quick manual test ----
+# ---- Quick manual test, including your original barangay-context samples ----
 samples = [
     "Salamat po sa tulong niyo, sobrang laking bagay!",
     "Bobo kayo, wala kayong ginagawa!",
     "Ano po ang schedule ng susunod na meeting?",
+    "Sayang lang ang budget dito, wala namang naitulong.",
 ]
 sample_vec = vectorizer.transform(samples)
 sample_preds = model.predict(sample_vec)
