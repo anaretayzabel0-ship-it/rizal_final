@@ -1204,6 +1204,15 @@ class NavigationController {
                     </div>
                 </div>`;
 
+            // Clicking anywhere on the card opens the viewer -- except on a
+            // button (Comment/View/Download/mini view/mini download) or
+            // inside the past-versions panel, which each have their own
+            // specific behavior already wired below.
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('button, .doc-past-versions')) return;
+                openDocumentViewer(doc, doc.fileUrl);
+            });
+
             container.appendChild(card);
         });
 

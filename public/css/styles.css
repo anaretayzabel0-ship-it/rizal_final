@@ -481,6 +481,7 @@ body {
     transition: var(--transition);
     margin-bottom: 1.5rem;
     border: 1px solid #eee;
+    cursor: pointer;
 }
 
 .document-card:hover {
