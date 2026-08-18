@@ -1839,6 +1839,7 @@ body {
         max-height: 100%;
         border-radius: 0;
         margin: 0;
+        padding: 0;
         display: flex;
         flex-direction: column;
     }
