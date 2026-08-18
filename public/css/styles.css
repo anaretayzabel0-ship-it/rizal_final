@@ -855,6 +855,7 @@ body {
 .sk-modal--sm  { max-width: 420px; }
 .sk-modal--md  { max-width: 560px; }
 .sk-modal--lg  { max-width: 640px; padding: 0; }
+.sk-modal--viewer { max-width: 960px; }
 
 @keyframes modalSlideIn {
     from { opacity: 0; transform: translateY(-20px) scale(0.97); }

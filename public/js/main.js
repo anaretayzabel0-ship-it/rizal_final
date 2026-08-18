@@ -24,23 +24,9 @@ function isPhoneViewport() {
 // so we only do this on phone widths; desktop keeps the direct file URL.
 function getViewerSrc(fileUrl) {
     if (!fileUrl) return '';
-
     if (isPhoneViewport()) {
-        // Check if the URL belongs to an image (png, jpg, jpeg, gif)
-        const isImage = /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(fileUrl);
-        
-        if (isImage) {
-            // Mobile browsers can render images perfectly fine in an iframe.
-            // No need for Google Docs Viewer here!
-            return fileUrl; 
-        } else {
-            // For PDFs, we still need Google Viewer to prevent auto-downloading.
-            // Note: Your Supabase file URL MUST be publicly accessible!
-            return `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(fileUrl)}`;
-        }
+        return `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(fileUrl)}`;
     }
-    
-    // Desktop browsers handle everything naturally
     return fileUrl;
 }
 
@@ -72,7 +58,6 @@ function triggerFileDownload(fileUrl) {
 // Shared by the main "View" button and the mini "View" buttons on past
 // versions — populates and opens the view-document modal.
 function openDocumentViewer(doc, file) {
-    document.getElementById('viewDocCategory').textContent = doc?.category || 'Document';
     document.getElementById('viewDocTitle').textContent = doc?.title || '';
     document.getElementById('viewDocMeta').textContent = doc
         ? `${doc.barangayName}  ·  Updated ${doc.date}`
@@ -1168,7 +1153,6 @@ class NavigationController {
                 <div class="card-content">
                     <div class="doc-header">
                         <div class="doc-badges">
-                            <span class="doc-category">${doc.category}</span>
                             ${doc.documentType ? `<span class="doc-type-badge">${doc.documentType}</span>` : ''}
                         </div>
                         <span class="doc-year-badge"><i class="fas fa-calendar-alt me-1"></i>${doc.year || 'N/A'}</span>
