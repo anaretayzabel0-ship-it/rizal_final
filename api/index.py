@@ -9,6 +9,7 @@ variable. All routes are defined inside this one app.
 Currently implemented:
   POST /api/login
   POST /api/register
+  POST /api/update_profile
   GET  /api/get_barangays
   GET  /api/get_sk_officials      (?barangay_id=<id> — calls the
                                    get_sk_officials_by_barangay RPC)
@@ -475,6 +476,159 @@ def register():
             "status": created.get("status"),
             "position": created.get("position"),
             "barangayId": created.get("barangay_id"),
+            "barangayName": barangay.get("barangay_name"),
+        }
+    }), 200
+
+
+@app.route("/api/update_profile", methods=["POST", "OPTIONS"])
+def update_profile():
+    """
+    Lets a resident edit their own name and email from the "My Account"
+    modal. Barangay and position are NOT editable here -- residents don't
+    self-assign a barangay or a position, so those stay read-only.
+
+    Expected JSON body:
+      { "userId": <int>, "firstName": <str>, "lastName": <str>, "email": <str> }
+
+    NOTE: like the rest of this API, there's no session/auth token -- the
+    caller just sends userId. This matches the trust model already used by
+    /api/post_comment (author_id sent by the client) rather than adding a
+    new one here.
+    """
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+
+    try:
+        user_id = int(data.get("userId") or 0)
+    except (TypeError, ValueError):
+        user_id = 0
+
+    first_name = (data.get("firstName") or "").strip()
+    last_name = (data.get("lastName") or "").strip()
+    email = (data.get("email") or "").strip()
+
+    if user_id <= 0:
+        return jsonify({
+            "success": False,
+            "message": "You must be logged in to update your profile."
+        }), 401
+
+    # ---- Validate ----
+    errors = {}
+    if not first_name:
+        errors["firstName"] = "First name is required."
+    if not last_name:
+        errors["lastName"] = "Last name is required."
+    if not email:
+        errors["email"] = "Email is required."
+    elif not EMAIL_RE.match(email):
+        errors["email"] = "Invalid email address."
+
+    if errors:
+        return jsonify({
+            "success": False,
+            "errors": errors
+        }), 422
+
+    # ---- Make sure the new email isn't already taken by a DIFFERENT user ----
+    try:
+        _, check_body = _supabase_get(
+            f"/rest/v1/users?email=eq.{urllib.parse.quote(email)}&select=user_id"
+        )
+    except (urllib.error.HTTPError, urllib.error.URLError):
+        return jsonify({
+            "success": False,
+            "message": "Server error. Please try again."
+        }), 500
+
+    existing = json.loads(check_body) if check_body else []
+    if any(row.get("user_id") != user_id for row in existing):
+        return jsonify({
+            "success": False,
+            "errors": {"email": "This email is already registered."}
+        }), 409
+
+    # ---- Update the row in Supabase ----
+    update_url = (
+        f"{SUPABASE_URL.rstrip('/')}/rest/v1/users?user_id=eq.{user_id}"
+        "&select=user_id,first_name,last_name,middle_initial,email,"
+        "status,position,barangay_id,barangays(barangay_name)"
+    )
+
+    payload = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
+    }
+
+    req = urllib.request.Request(
+        update_url,
+        data=json.dumps(payload).encode("utf-8"),
+        method="PATCH",
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "return=representation",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            status_code = resp.status
+            response_body = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        try:
+            details = json.loads(error_body)
+        except json.JSONDecodeError:
+            details = error_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to update profile. Please try again.",
+            "details": details
+        }), 500
+    except urllib.error.URLError as e:
+        return jsonify({
+            "success": False,
+            "message": f"Request failed: {e.reason}"
+        }), 500
+
+    if status_code != 200:
+        try:
+            details = json.loads(response_body)
+        except json.JSONDecodeError:
+            details = response_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to update profile. Please try again.",
+            "details": details
+        }), 500
+
+    rows = json.loads(response_body) if response_body else []
+    if not rows:
+        return jsonify({
+            "success": False,
+            "message": "Account not found."
+        }), 404
+
+    updated = rows[0]
+    barangay = updated.get("barangays") or {}
+
+    return jsonify({
+        "success": True,
+        "message": "Profile updated successfully.",
+        "user": {
+            "userId": updated.get("user_id"),
+            "firstName": updated.get("first_name"),
+            "lastName": updated.get("last_name"),
+            "middleInitial": updated.get("middle_initial"),
+            "email": updated.get("email"),
+            "position": updated.get("position"),
+            "barangayId": updated.get("barangay_id"),
             "barangayName": barangay.get("barangay_name"),
         }
     }), 200

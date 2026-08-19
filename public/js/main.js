@@ -182,6 +182,19 @@ class AuthController {
             AuthController.signOut();
         });
 
+        document.getElementById('editAccountBtn')?.addEventListener('click', () => {
+            AuthController.enterAccountEditMode();
+        });
+
+        document.getElementById('cancelEditAccountBtn')?.addEventListener('click', () => {
+            AuthController.exitAccountEditMode();
+        });
+
+        document.getElementById('accountEditForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            AuthController.handleUpdateProfile();
+        });
+
         // Mobile drawer's auth section mirrors the header buttons
         document.getElementById('drawerRegisterBtn')?.addEventListener('click', () => {
             AuthController.loadBarangays();
@@ -468,25 +481,136 @@ class AuthController {
         }
     }
 
-    // Populates and opens the "My Account" modal from currentUser. Position
-    // is title-cased for display (e.g. "resident" -> "Resident"); barangay
-    // falls back gracefully if it wasn't returned by the API for any reason.
+    // Populates and opens the "My Account" modal from currentUser, always
+    // starting back in read-only view mode (in case it was left in edit
+    // mode from a previous open). Barangay falls back gracefully if it
+    // wasn't returned by the API for any reason.
     static openAccountModal() {
         if (!currentUser) return;
 
+        AuthController.renderAccountView();
+        AuthController.exitAccountEditMode();
+        ModalController.open('accountModal');
+    }
+
+    // Refreshes the read-only summary rows from currentUser.
+    static renderAccountView() {
         const fullName = [currentUser.firstName, currentUser.lastName]
             .filter(Boolean)
             .join(' ');
-        const position = currentUser.position
-            ? currentUser.position.charAt(0).toUpperCase() + currentUser.position.slice(1)
-            : '—';
 
         document.getElementById('accountFullName').textContent = fullName || '—';
         document.getElementById('accountEmail').textContent    = currentUser.email || '—';
         document.getElementById('accountBarangay').textContent = currentUser.barangayName || '—';
-        document.getElementById('accountPosition').textContent = position;
+    }
 
-        ModalController.open('accountModal');
+    // Switches the modal into edit mode: pre-fills the form with the
+    // current name/email and swaps the view summary + "Edit Profile"
+    // button out for the form.
+    static enterAccountEditMode() {
+        document.getElementById('accountEditFirstName').value = currentUser.firstName || '';
+        document.getElementById('accountEditLastName').value  = currentUser.lastName || '';
+        document.getElementById('accountEditEmail').value     = currentUser.email || '';
+        AuthController.clearErrors(['accountEditFirstName', 'accountEditLastName', 'accountEditEmail']);
+
+        document.getElementById('accountViewMode').classList.add('d-none');
+        document.getElementById('editAccountBtn').classList.add('d-none');
+        document.getElementById('accountEditForm').classList.remove('d-none');
+    }
+
+    // Reverts back to the read-only view (used by Cancel and after a
+    // successful save).
+    static exitAccountEditMode() {
+        document.getElementById('accountEditForm').classList.add('d-none');
+        document.getElementById('accountViewMode').classList.remove('d-none');
+        document.getElementById('editAccountBtn').classList.remove('d-none');
+    }
+
+    static async handleUpdateProfile() {
+        const firstName = document.getElementById('accountEditFirstName').value.trim();
+        const lastName  = document.getElementById('accountEditLastName').value.trim();
+        const email     = document.getElementById('accountEditEmail').value.trim();
+
+        const fields = ['accountEditFirstName', 'accountEditLastName', 'accountEditEmail'];
+        AuthController.clearErrors(fields);
+
+        let valid = true;
+        if (!firstName) {
+            AuthController.showError('accountEditFirstNameError', 'First name is required.');
+            document.getElementById('accountEditFirstName').classList.add('is-invalid');
+            valid = false;
+        }
+        if (!lastName) {
+            AuthController.showError('accountEditLastNameError', 'Last name is required.');
+            document.getElementById('accountEditLastName').classList.add('is-invalid');
+            valid = false;
+        }
+        if (!email) {
+            AuthController.showError('accountEditEmailError', 'Email is required.');
+            document.getElementById('accountEditEmail').classList.add('is-invalid');
+            valid = false;
+        } else if (!AuthController.isValidEmail(email)) {
+            AuthController.showError('accountEditEmailError', 'Please enter a valid email address.');
+            document.getElementById('accountEditEmail').classList.add('is-invalid');
+            valid = false;
+        }
+
+        if (!valid) return;
+
+        const saveBtn = document.getElementById('saveAccountBtn');
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Saving...'; }
+
+        try {
+            const response = await fetch('api/update_profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: currentUser.userId,
+                    firstName,
+                    lastName,
+                    email
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                if (result.errors) {
+                    Object.keys(result.errors).forEach(field => {
+                        const inputId = 'accountEdit' + field.charAt(0).toUpperCase() + field.slice(1);
+                        AuthController.showError(inputId + 'Error', result.errors[field]);
+                        document.getElementById(inputId)?.classList.add('is-invalid');
+                    });
+                } else {
+                    AuthController.showToast(result.message || 'Could not update profile. Please try again.');
+                }
+                return;
+            }
+
+            // Success — refresh currentUser (this also updates the header
+            // pill and persists the new session to localStorage), then
+            // flip the modal back to the updated read-only view.
+            const user = result.user;
+            AuthController.setUser({
+                userId:       user.userId,
+                firstName:    user.firstName,
+                lastName:     user.lastName,
+                email:        user.email,
+                position:     user.position,
+                barangayId:   user.barangayId,
+                barangayName: user.barangayName,
+            });
+
+            AuthController.renderAccountView();
+            AuthController.exitAccountEditMode();
+            AuthController.showToast('Profile updated successfully.');
+
+        } catch (error) {
+            console.error('Update profile error:', error);
+            AuthController.showToast('Something went wrong. Please try again.');
+        } finally {
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = 'Save Changes'; }
+        }
     }
 
     static signOut() {

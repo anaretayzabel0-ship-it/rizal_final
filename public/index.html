@@ -385,7 +385,8 @@
                 <p class="sk-modal__subtitle">Your registered resident profile.</p>
             </div>
 
-            <div class="sk-account-info">
+            <!-- View mode: read-only summary -->
+            <div class="sk-account-info" id="accountViewMode">
                 <div class="sk-account-info__row">
                     <span class="sk-account-info__label"><i class="fas fa-user-circle"></i> Full Name</span>
                     <span class="sk-account-info__value" id="accountFullName">—</span>
@@ -398,11 +399,41 @@
                     <span class="sk-account-info__label"><i class="fas fa-map-marker-alt"></i> Barangay</span>
                     <span class="sk-account-info__value" id="accountBarangay">—</span>
                 </div>
-                <div class="sk-account-info__row">
-                    <span class="sk-account-info__label"><i class="fas fa-id-badge"></i> Position</span>
-                    <span class="sk-account-info__value" id="accountPosition">—</span>
-                </div>
             </div>
+
+            <button class="sk-btn-outline w-100 mt-3" id="editAccountBtn">
+                <i class="fas fa-pen me-2"></i> Edit Profile
+            </button>
+
+            <!-- Edit mode: name + email form, hidden until "Edit Profile" is clicked -->
+            <form id="accountEditForm" class="d-none" novalidate>
+                <div class="sk-form-row">
+                    <div class="sk-form-group">
+                        <label class="sk-label">First name <span class="sk-required">*</span></label>
+                        <input type="text" class="sk-input" id="accountEditFirstName" required>
+                        <span class="sk-field-error" id="accountEditFirstNameError"></span>
+                    </div>
+                    <div class="sk-form-group">
+                        <label class="sk-label">Last name <span class="sk-required">*</span></label>
+                        <input type="text" class="sk-input" id="accountEditLastName" required>
+                        <span class="sk-field-error" id="accountEditLastNameError"></span>
+                    </div>
+                </div>
+
+                <div class="sk-form-group">
+                    <label class="sk-label">Email address <span class="sk-required">*</span></label>
+                    <div class="sk-input-wrap">
+                        <i class="fas fa-envelope sk-input-icon"></i>
+                        <input type="email" class="sk-input" id="accountEditEmail" required>
+                    </div>
+                    <span class="sk-field-error" id="accountEditEmailError"></span>
+                </div>
+
+                <div class="sk-form-row-split mt-2">
+                    <button type="button" class="sk-btn-outline" id="cancelEditAccountBtn">Cancel</button>
+                    <button type="submit" class="sk-btn-primary" id="saveAccountBtn">Save Changes</button>
+                </div>
+            </form>
 
             <button class="sk-btn-outline w-100 mt-3" id="accountSignOutBtn">
                 <i class="fas fa-sign-out-alt me-2"></i> Sign Out

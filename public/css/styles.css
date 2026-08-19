@@ -264,6 +264,15 @@ body {
     word-break: break-word;
 }
 
+/* Equal-width Cancel / Save buttons in the account edit form */
+#accountEditForm .sk-form-row-split {
+    gap: 0.6rem;
+}
+
+#accountEditForm .sk-form-row-split button {
+    flex: 1;
+}
+
 
 /* ========== NAVIGATION STYLES ========== */
 .sk-navbar {
