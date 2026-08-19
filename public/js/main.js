@@ -169,6 +169,19 @@ class AuthController {
             AuthController.signOut();
         });
 
+        document.getElementById('viewAccountBtn')?.addEventListener('click', () => {
+            AuthController.openAccountModal();
+        });
+
+        document.getElementById('drawerViewAccountBtn')?.addEventListener('click', () => {
+            AuthController.openAccountModal();
+        });
+
+        document.getElementById('accountSignOutBtn')?.addEventListener('click', () => {
+            ModalController.close('accountModal');
+            AuthController.signOut();
+        });
+
         // Mobile drawer's auth section mirrors the header buttons
         document.getElementById('drawerRegisterBtn')?.addEventListener('click', () => {
             AuthController.loadBarangays();
@@ -261,10 +274,13 @@ class AuthController {
             // Success
             const user = result.user;
             AuthController.setUser({
-                userId:    user.userId,
-                firstName: user.firstName,
-                lastName:  user.lastName,
-                email:     user.email,
+                userId:       user.userId,
+                firstName:    user.firstName,
+                lastName:     user.lastName,
+                email:        user.email,
+                position:     user.position,
+                barangayId:   user.barangayId,
+                barangayName: user.barangayName,
             });
 
             if (activeDocId !== null) {
@@ -371,10 +387,13 @@ class AuthController {
             // Success — set user and close modal
             const user = result.user;
             AuthController.setUser({
-                userId:     user.userId,
-                firstName:  user.firstName,
-                lastName:   user.lastName,
-                email:      user.email,
+                userId:       user.userId,
+                firstName:    user.firstName,
+                lastName:     user.lastName,
+                email:        user.email,
+                position:     user.position,
+                barangayId:   user.barangayId,
+                barangayName: user.barangayName,
             });
 
             if (activeDocId !== null) {
@@ -397,10 +416,13 @@ class AuthController {
 
     static setUser(user, options = {}) {
         currentUser = {
-            userId:    user.userId,
-            firstName: user.firstName,
-            lastName:  user.lastName,
-            email:     user.email,
+            userId:       user.userId,
+            firstName:    user.firstName,
+            lastName:     user.lastName,
+            email:        user.email,
+            position:     user.position ?? null,
+            barangayId:   user.barangayId ?? null,
+            barangayName: user.barangayName ?? null,
         };
         const initials = (user.firstName[0] + user.lastName[0]).toUpperCase();
         document.getElementById('headerLoginBtn').style.display = 'none';
@@ -444,6 +466,27 @@ class AuthController {
         if (stored && stored.userId) {
             AuthController.setUser(stored, { skipPersist: true });
         }
+    }
+
+    // Populates and opens the "My Account" modal from currentUser. Position
+    // is title-cased for display (e.g. "resident" -> "Resident"); barangay
+    // falls back gracefully if it wasn't returned by the API for any reason.
+    static openAccountModal() {
+        if (!currentUser) return;
+
+        const fullName = [currentUser.firstName, currentUser.lastName]
+            .filter(Boolean)
+            .join(' ');
+        const position = currentUser.position
+            ? currentUser.position.charAt(0).toUpperCase() + currentUser.position.slice(1)
+            : '—';
+
+        document.getElementById('accountFullName').textContent = fullName || '—';
+        document.getElementById('accountEmail').textContent    = currentUser.email || '—';
+        document.getElementById('accountBarangay').textContent = currentUser.barangayName || '—';
+        document.getElementById('accountPosition').textContent = position;
+
+        ModalController.open('accountModal');
     }
 
     static signOut() {
@@ -1087,7 +1130,6 @@ class AboutUsController {
                             </div>
                             <h4 class="official-name">${fullName}</h4>
                             <p class="official-position">${position}</p>
-                            ${o.email ? `<span class="official-barangay"><i class="fas fa-envelope"></i>${o.email}</span>` : ''}
                         </div>
                     </div>`;
             }).join('');

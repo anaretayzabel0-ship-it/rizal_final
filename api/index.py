@@ -215,7 +215,8 @@ def login():
     # ---- Fetch user by email from Supabase ----
     select_fields = (
         "user_id,first_name,last_name,middle_initial,email,"
-        "password,status,position,role_id,barangay_id"
+        "password,status,position,role_id,barangay_id,"
+        "barangays(barangay_name)"
     )
     url = (
         f"{SUPABASE_URL.rstrip('/')}/rest/v1/users"
@@ -286,6 +287,11 @@ def login():
         }), 401
 
     # ---- Return safe user data (never return password) ----
+    # "barangays" comes back as an embedded object (or None if the user has
+    # no barangay_id, e.g. an SK-side account) thanks to the embed in
+    # select_fields above.
+    barangay = user.get("barangays") or {}
+
     return jsonify({
         "success": True,
         "message": "Login successful.",
@@ -297,6 +303,7 @@ def login():
             "email": user.get("email"),
             "position": user.get("position"),
             "barangayId": user.get("barangay_id"),
+            "barangayName": barangay.get("barangay_name"),
         }
     }), 200
 
@@ -388,7 +395,14 @@ def register():
     ).decode("utf-8")
 
     # ---- Insert new user into Supabase ----
-    insert_url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/users"
+    # select= embeds the barangay name in the same round trip (Supabase
+    # supports resource embedding on insert, not just GET), so the
+    # frontend can show it immediately without a second request.
+    insert_url = (
+        f"{SUPABASE_URL.rstrip('/')}/rest/v1/users"
+        "?select=user_id,first_name,last_name,middle_initial,email,"
+        "status,position,barangay_id,barangays(barangay_name)"
+    )
 
     new_user = {
         "role_id": role_id,
@@ -447,6 +461,7 @@ def register():
         }), 500
 
     created = json.loads(response_body)[0]
+    barangay = created.get("barangays") or {}
 
     return jsonify({
         "success": True,
@@ -455,8 +470,12 @@ def register():
             "userId": created.get("user_id"),
             "firstName": created.get("first_name"),
             "lastName": created.get("last_name"),
+            "middleInitial": created.get("middle_initial"),
             "email": created.get("email"),
             "status": created.get("status"),
+            "position": created.get("position"),
+            "barangayId": created.get("barangay_id"),
+            "barangayName": barangay.get("barangay_name"),
         }
     }), 200
 

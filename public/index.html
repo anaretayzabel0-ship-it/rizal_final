@@ -42,8 +42,10 @@
                         </button>
                         <!-- Shown when logged in -->
                         <div class="user-pill d-none" id="userPill">
-                            <div class="user-avatar" id="userAvatar">MR</div>
-                            <span id="userDisplayName">Maria</span>
+                            <button class="user-pill__account" id="viewAccountBtn" title="My Account">
+                                <div class="user-avatar" id="userAvatar">MR</div>
+                                <span id="userDisplayName">Maria</span>
+                            </button>
                             <button class="btn-signout" id="signOutBtn" title="Sign out">
                                 <i class="fas fa-sign-out-alt"></i>
                             </button>
@@ -92,8 +94,10 @@
                         <i class="fas fa-user-plus me-1"></i> <span>Register</span>
                     </button>
                     <div class="user-pill nav-drawer-auth__pill d-none" id="drawerUserPill">
-                        <div class="user-avatar" id="drawerUserAvatar">MR</div>
-                        <span id="drawerUserDisplayName">Maria</span>
+                        <button class="user-pill__account" id="drawerViewAccountBtn" title="My Account">
+                            <div class="user-avatar" id="drawerUserAvatar">MR</div>
+                            <span id="drawerUserDisplayName">Maria</span>
+                        </button>
                         <button class="btn-signout" id="drawerSignOutBtn" title="Sign out">
                             <i class="fas fa-sign-out-alt"></i>
                         </button>
@@ -361,6 +365,48 @@
             <p class="sk-modal__note mt-3">
                 Only verified barangay residents of Rizal, Laguna may register.
             </p>
+        </div>
+    </div>
+
+
+    <!-- ============================================================
+         MODAL: MY ACCOUNT
+    ============================================================ -->
+    <div class="sk-modal-overlay" id="accountModal">
+        <div class="sk-modal sk-modal--sm">
+            <button class="sk-modal__close" data-close="accountModal">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="sk-modal__header-bar">
+                <div class="sk-modal__icon-wrap">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h2 class="sk-modal__title">My Account</h2>
+                <p class="sk-modal__subtitle">Your registered resident profile.</p>
+            </div>
+
+            <div class="sk-account-info">
+                <div class="sk-account-info__row">
+                    <span class="sk-account-info__label"><i class="fas fa-user-circle"></i> Full Name</span>
+                    <span class="sk-account-info__value" id="accountFullName">—</span>
+                </div>
+                <div class="sk-account-info__row">
+                    <span class="sk-account-info__label"><i class="fas fa-envelope"></i> Email</span>
+                    <span class="sk-account-info__value" id="accountEmail">—</span>
+                </div>
+                <div class="sk-account-info__row">
+                    <span class="sk-account-info__label"><i class="fas fa-map-marker-alt"></i> Barangay</span>
+                    <span class="sk-account-info__value" id="accountBarangay">—</span>
+                </div>
+                <div class="sk-account-info__row">
+                    <span class="sk-account-info__label"><i class="fas fa-id-badge"></i> Position</span>
+                    <span class="sk-account-info__value" id="accountPosition">—</span>
+                </div>
+            </div>
+
+            <button class="sk-btn-outline w-100 mt-3" id="accountSignOutBtn">
+                <i class="fas fa-sign-out-alt me-2"></i> Sign Out
+            </button>
         </div>
     </div>
 
