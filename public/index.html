@@ -79,9 +79,9 @@
                             About us ▼
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Mission & Vision</a></li>
-                            <li><a class="dropdown-item" href="#">SK Officials</a></li>
-                            <li><a class="dropdown-item" href="#">Contact Us</a></li>
+                            <li><a class="dropdown-item" href="#" id="missionVisionLink">Mission & Vision</a></li>
+                            <li><a class="dropdown-item" href="#" id="skOfficialsLink">SK Officials</a></li>
+                            <li><a class="dropdown-item" href="#" id="contactUsLink">Contact Us</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -196,6 +196,89 @@
                         <h4 class="mt-3" style="color: #7f8c8d;">No Documents Found</h4>
                         <p style="color: #95a5a6;">Try adjusting your filters to see more documents.</p>
                     </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ABOUT US PAGE -->
+        <div id="aboutUsPage" style="display: none;">
+
+            <div class="page-header">
+                <h1><i class="fas fa-landmark me-2"></i>About the SK Federation</h1>
+                <p class="page-subtitle">Our mission, vision, officials, and barangay contact directory</p>
+            </div>
+
+            <div class="content-section">
+                <div class="container">
+
+                    <!-- MISSION & VISION -->
+                    <section id="missionVisionSection" class="about-section">
+                        <div class="about-section-title">
+                            <i class="fas fa-bullseye"></i>
+                            <h2>Mission &amp; Vision</h2>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="mv-card">
+                                    <div class="mv-card-icon"><i class="fas fa-flag"></i></div>
+                                    <h3>Our Mission</h3>
+                                    <p>To empower the youth of Rizal, Laguna through transparent, accountable, and inclusive governance — providing programs, platforms, and opportunities that develop their full potential as active partners in nation-building.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mv-card mv-card--alt">
+                                    <div class="mv-card-icon"><i class="fas fa-eye"></i></div>
+                                    <h3>Our Vision</h3>
+                                    <p>A united federation of empowered, God-loving, and civic-minded young Filipinos who champion good governance, environmental stewardship, and community development across every barangay of Rizal, Laguna.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SK OFFICIALS -->
+                    <section id="skOfficialsSection" class="about-section">
+                        <div class="about-section-title">
+                            <i class="fas fa-users"></i>
+                            <h2>SK Officials</h2>
+                        </div>
+
+                        <p class="drilldown-hint">Select a barangay to view its SK officials.</p>
+
+                        <!-- STEP 1: pick a barangay -->
+                        <div class="row g-3" id="officialsBarangayList"></div>
+
+                        <!-- STEP 2: officials of the chosen barangay -->
+                        <div id="officialsDetailView" style="display: none;">
+                            <button class="barangay-back-btn" id="officialsBackBtn">
+                                <i class="fas fa-arrow-left"></i> Back to barangays
+                            </button>
+                            <h3 class="barangay-detail-title" id="officialsDetailTitle"></h3>
+                            <div class="row g-4" id="officialsDetailGrid"></div>
+                        </div>
+                    </section>
+
+                    <!-- CONTACT US PER BARANGAY -->
+                    <section id="contactUsSection" class="about-section">
+                        <div class="about-section-title">
+                            <i class="fas fa-address-book"></i>
+                            <h2>Contact Us — Per Barangay</h2>
+                        </div>
+
+                        <p class="drilldown-hint">Select a barangay to view its contact information.</p>
+
+                        <!-- STEP 1: pick a barangay -->
+                        <div class="row g-3" id="contactBarangayList"></div>
+
+                        <!-- STEP 2: contact info of the chosen barangay -->
+                        <div id="contactDetailView" style="display: none;">
+                            <button class="barangay-back-btn" id="contactBackBtn">
+                                <i class="fas fa-arrow-left"></i> Back to barangays
+                            </button>
+                            <div class="row g-4" id="contactDetailGrid"></div>
+                        </div>
+                    </section>
 
                 </div>
             </div>

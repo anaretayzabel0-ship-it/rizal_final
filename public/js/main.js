@@ -935,17 +935,191 @@ class NavDrawerController {
 }
 
 
+// ==========================================
+// ABOUT US: sample data organized per barangay
+// (swap with a real API call, e.g. /api/get_sk_officials,
+//  /api/get_barangay_contacts, once backed by Supabase)
+// ==========================================
+const SK_OFFICIALS_BY_BARANGAY = {
+    'poblacion': {
+        name: 'Barangay Poblacion',
+        officials: [
+            { name: 'Juan Dela Cruz',    position: 'SK Chairperson',                              color: '0d3b4f' },
+            { name: 'Trisha Aquino',     position: 'SK Secretary',                                color: 'c0392b' },
+            { name: 'Leo Ocampo',        position: 'SK Kagawad — Committee on Education',         color: '0d3b4f' },
+            { name: 'Sofia Villanueva',  position: 'SK Kagawad — Committee on Youth Development', color: 'c0392b' }
+        ]
+    },
+    'san-isidro': {
+        name: 'Barangay San Isidro',
+        officials: [
+            { name: 'Maria Santos', position: 'SK Chairperson',                        color: 'c0392b' },
+            { name: 'Ella Navarro', position: 'SK Treasurer',                          color: '0d3b4f' },
+            { name: 'Paolo Cruz',   position: 'SK Kagawad — Committee on Sports',       color: 'c0392b' }
+        ]
+    },
+    'santo-nino': {
+        name: 'Barangay Santo Niño',
+        officials: [
+            { name: 'Angelo Reyes', position: 'SK Chairperson',                       color: '0d3b4f' },
+            { name: 'Kim Torres',   position: 'SK Kagawad — Committee on Health',      color: 'c0392b' }
+        ]
+    },
+    'bagong-pook': {
+        name: 'Barangay Bagong Pook',
+        officials: [
+            { name: 'Bianca Fernandez', position: 'SK Chairperson',                              color: 'c0392b' },
+            { name: 'Miguel Santiago',  position: 'SK Kagawad — Committee on Environment',        color: '0d3b4f' }
+        ]
+    },
+    'cabooan': {
+        name: 'Barangay Cabooan',
+        officials: [
+            { name: 'Carlo Mendoza',  position: 'SK Chairperson', color: '0d3b4f' },
+            { name: 'Nicole Ramirez', position: 'SK Auditor',     color: 'c0392b' }
+        ]
+    },
+    'tagumpay': {
+        name: 'Barangay Tagumpay',
+        officials: [
+            { name: 'Diana Ramos',   position: 'SK Chairperson',        color: 'c0392b' },
+            { name: 'Kevin Bautista', position: 'SK Sergeant-at-Arms',  color: '0d3b4f' }
+        ]
+    }
+};
+
+const BARANGAY_CONTACTS = {
+    'poblacion':   { name: 'Barangay Poblacion',   fbName: 'SK Poblacion Official',   fbUrl: '#', phone: '0917 123 4567', phoneHref: 'tel:+639171234567', email: 'skpoblacion@example.com' },
+    'san-isidro':  { name: 'Barangay San Isidro',  fbName: 'SK San Isidro Official',  fbUrl: '#', phone: '0918 123 4567', phoneHref: 'tel:+639181234567', email: 'sksanisidro@example.com' },
+    'santo-nino':  { name: 'Barangay Santo Niño',  fbName: 'SK Santo Niño Official',  fbUrl: '#', phone: '0919 123 4567', phoneHref: 'tel:+639191234567', email: 'sksantonino@example.com' },
+    'bagong-pook': { name: 'Barangay Bagong Pook', fbName: 'SK Bagong Pook Official', fbUrl: '#', phone: '0920 123 4567', phoneHref: 'tel:+639201234567', email: 'skbagongpook@example.com' },
+    'cabooan':     { name: 'Barangay Cabooan',     fbName: 'SK Cabooan Official',     fbUrl: '#', phone: '0921 123 4567', phoneHref: 'tel:+639211234567', email: 'skcabooan@example.com' },
+    'tagumpay':    { name: 'Barangay Tagumpay',    fbName: 'SK Tagumpay Official',    fbUrl: '#', phone: '0922 123 4567', phoneHref: 'tel:+639221234567', email: 'sktagumpay@example.com' }
+};
+
+class AboutUsController {
+    constructor() {
+        this.officialsListEl   = document.getElementById('officialsBarangayList');
+        this.officialsDetailEl = document.getElementById('officialsDetailView');
+        this.officialsGridEl   = document.getElementById('officialsDetailGrid');
+        this.officialsTitleEl  = document.getElementById('officialsDetailTitle');
+
+        this.contactListEl   = document.getElementById('contactBarangayList');
+        this.contactDetailEl = document.getElementById('contactDetailView');
+        this.contactGridEl   = document.getElementById('contactDetailGrid');
+
+        this.init();
+    }
+
+    init() {
+        this.renderBarangayList(
+            this.officialsListEl,
+            SK_OFFICIALS_BY_BARANGAY,
+            (key) => `${SK_OFFICIALS_BY_BARANGAY[key].officials.length} officials`,
+            (key) => this.showOfficials(key)
+        );
+
+        this.renderBarangayList(
+            this.contactListEl,
+            BARANGAY_CONTACTS,
+            () => 'Tap to view contact info',
+            (key) => this.showContact(key)
+        );
+
+        document.getElementById('officialsBackBtn')?.addEventListener('click', () => this.resetView('officials'));
+        document.getElementById('contactBackBtn')?.addEventListener('click', () => this.resetView('contact'));
+    }
+
+    // Renders the "choose a barangay" grid shared by both sub-pages.
+    renderBarangayList(container, dataSource, metaFn, onSelect) {
+        if (!container) return;
+
+        container.innerHTML = Object.keys(dataSource).map(key => `
+            <div class="col-6 col-md-4">
+                <div class="barangay-select-card" data-barangay="${key}">
+                    <div class="barangay-select-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="barangay-select-info">
+                        <div class="barangay-select-name">${dataSource[key].name}</div>
+                        <div class="barangay-select-meta">${metaFn(key)}</div>
+                    </div>
+                    <i class="fas fa-chevron-right barangay-select-chevron"></i>
+                </div>
+            </div>`).join('');
+
+        container.querySelectorAll('.barangay-select-card').forEach(card => {
+            card.addEventListener('click', () => onSelect(card.dataset.barangay));
+        });
+    }
+
+    showOfficials(key) {
+        const data = SK_OFFICIALS_BY_BARANGAY[key];
+        if (!data) return;
+
+        this.officialsTitleEl.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${data.name} — SK Officials`;
+        this.officialsGridEl.innerHTML = data.officials.map(o => `
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="official-card">
+                    <div class="official-photo">
+                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(o.name)}&background=${o.color}&color=fff&size=200" alt="${o.name}">
+                    </div>
+                    <h4 class="official-name">${o.name}</h4>
+                    <p class="official-position">${o.position}</p>
+                </div>
+            </div>`).join('');
+
+        this.officialsListEl.style.display   = 'none';
+        this.officialsDetailEl.style.display = 'block';
+        this.officialsDetailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    showContact(key) {
+        const c = BARANGAY_CONTACTS[key];
+        if (!c) return;
+
+        this.contactGridEl.innerHTML = `
+            <div class="col-md-6">
+                <div class="contact-card">
+                    <h4 class="contact-barangay-name"><i class="fas fa-map-marker-alt"></i>${c.name}</h4>
+                    <ul class="contact-list">
+                        <li><i class="fab fa-facebook"></i><a href="${c.fbUrl}" target="_blank" rel="noopener">${c.fbName}</a></li>
+                        <li><i class="fas fa-phone"></i><a href="${c.phoneHref}">${c.phone}</a></li>
+                        <li><i class="fas fa-envelope"></i><a href="mailto:${c.email}">${c.email}</a></li>
+                    </ul>
+                </div>
+            </div>`;
+
+        this.contactListEl.style.display   = 'none';
+        this.contactDetailEl.style.display = 'block';
+        this.contactDetailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Returns a sub-page to its "choose a barangay" list.
+    // which: 'officials' | 'contact'
+    resetView(which) {
+        if (which === 'officials') {
+            this.officialsDetailEl.style.display = 'none';
+            this.officialsListEl.style.display   = '';
+        } else {
+            this.contactDetailEl.style.display = 'none';
+            this.contactListEl.style.display   = '';
+        }
+    }
+}
+
+
 class NavigationController {
     constructor() {
         this.pages = {
             home:        document.getElementById('homePage'),
-            policyBoard: document.getElementById('policyBoardPage')
+            policyBoard: document.getElementById('policyBoardPage'),
+            aboutUs:     document.getElementById('aboutUsPage')
         };
 
         this.navLinks = {
             home:           document.getElementById('homeNavLink'),
             policyBoard:    document.getElementById('policyBoardNavLink'),
-            accomplishment: document.getElementById('accomplishmentNavLink')
+            accomplishment: document.getElementById('accomplishmentNavLink'),
+            aboutUs:        document.getElementById('aboutDropdown')
         };
 
         this.currentPage = 'home';
@@ -967,6 +1141,26 @@ class NavigationController {
         this.navLinks.accomplishment?.addEventListener('click', (e) => {
             e.preventDefault();
             alert('Accomplishment Reports page coming soon!');
+        });
+
+        // About Us dropdown → open the About Us page, then scroll to the
+        // relevant section (Mission & Vision / SK Officials / Contact Us).
+        document.getElementById('missionVisionLink')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showPage('aboutUs');
+            this.scrollToSection('missionVisionSection');
+        });
+        document.getElementById('skOfficialsLink')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showPage('aboutUs');
+            window.aboutUsController?.resetView('officials');
+            this.scrollToSection('skOfficialsSection');
+        });
+        document.getElementById('contactUsLink')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showPage('aboutUs');
+            window.aboutUsController?.resetView('contact');
+            this.scrollToSection('contactUsSection');
         });
 
         document.getElementById('applyFilterBtn')?.addEventListener('click', () => this.applyFilters());
@@ -1006,6 +1200,15 @@ class NavigationController {
         Object.keys(this.navLinks).forEach(key => {
             this.navLinks[key]?.classList.toggle('active', key === pageName);
         });
+    }
+
+    // Smoothly scrolls to a section within the currently-shown page.
+    // A brief delay lets the page's display switch to "block" first so
+    // the browser calculates the correct scroll position.
+    scrollToSection(sectionId) {
+        setTimeout(() => {
+            document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
     }
 
     // ==========================================
@@ -1385,6 +1588,7 @@ document.addEventListener('DOMContentLoaded', function () {
     AuthController.restoreSession();
     CommentController.init();
     NavDrawerController.init();
+    window.aboutUsController = new AboutUsController();
     window.navigationController = new NavigationController();
     console.log('SK Federation Portal - Initialized');
 });
