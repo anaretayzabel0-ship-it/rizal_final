@@ -10,6 +10,8 @@ Currently implemented:
   POST /api/login
   POST /api/register
   GET  /api/get_barangays
+  GET  /api/get_sk_officials      (?barangay_id=<id> — calls the
+                                   get_sk_officials_by_barangay RPC)
   GET  /api/get_posts
   POST /api/post_comment   (top-level comments AND replies at any depth,
                             via optional parent_id -- see post_comment())
@@ -517,6 +519,81 @@ def get_barangays():
     return jsonify({
         "success": True,
         "data": barangays
+    }), 200
+
+
+@app.route("/api/get_sk_officials", methods=["GET", "OPTIONS"])
+def get_sk_officials():
+    """
+    Calls the get_sk_officials_by_barangay(p_barangay_id) RPC in Supabase.
+    That function returns one JSON object: the barangay's info plus an
+    `officials` array of users whose role_id matches roles.role_name =
+    'sk_official'. See get_sk_officials_by_barangay.sql for the function.
+
+    Query param:
+      barangay_id (required, integer)
+    """
+    if request.method == "OPTIONS":
+        return "", 204
+
+    barangay_id = request.args.get("barangay_id", type=int)
+    if not barangay_id:
+        return jsonify({
+            "success": False,
+            "message": "barangay_id is required."
+        }), 400
+
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/rpc/get_sk_officials_by_barangay"
+    payload = json.dumps({"p_barangay_id": barangay_id}).encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            status_code = resp.status
+            response_body = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        try:
+            details = json.loads(error_body)
+        except json.JSONDecodeError:
+            details = error_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch SK officials.",
+            "details": details
+        }), e.code
+    except urllib.error.URLError as e:
+        return jsonify({
+            "success": False,
+            "message": f"Request failed: {e.reason}"
+        }), 500
+
+    if status_code != 200:
+        try:
+            details = json.loads(response_body)
+        except json.JSONDecodeError:
+            details = response_body
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch SK officials.",
+            "details": details
+        }), status_code
+
+    result = json.loads(response_body) if response_body else None
+
+    return jsonify({
+        "success": True,
+        "data": result
     }), 200
 
 

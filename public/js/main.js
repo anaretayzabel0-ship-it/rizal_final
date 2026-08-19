@@ -936,67 +936,13 @@ class NavDrawerController {
 
 
 // ==========================================
-// ABOUT US: sample data organized per barangay
-// (swap with a real API call, e.g. /api/get_sk_officials,
-//  /api/get_barangay_contacts, once backed by Supabase)
+// ABOUT US
+// Barangays load from GET /api/get_barangays (real data).
+// SK Officials load per-barangay from GET /api/get_sk_officials?barangay_id=X,
+// which calls the get_sk_officials_by_barangay Supabase RPC.
+// Contact info has no schema/table yet, so that sub-page shows a
+// "not on file" placeholder per barangay until those fields exist.
 // ==========================================
-const SK_OFFICIALS_BY_BARANGAY = {
-    'poblacion': {
-        name: 'Barangay Poblacion',
-        officials: [
-            { name: 'Juan Dela Cruz',    position: 'SK Chairperson',                              color: '0d3b4f' },
-            { name: 'Trisha Aquino',     position: 'SK Secretary',                                color: 'c0392b' },
-            { name: 'Leo Ocampo',        position: 'SK Kagawad — Committee on Education',         color: '0d3b4f' },
-            { name: 'Sofia Villanueva',  position: 'SK Kagawad — Committee on Youth Development', color: 'c0392b' }
-        ]
-    },
-    'san-isidro': {
-        name: 'Barangay San Isidro',
-        officials: [
-            { name: 'Maria Santos', position: 'SK Chairperson',                        color: 'c0392b' },
-            { name: 'Ella Navarro', position: 'SK Treasurer',                          color: '0d3b4f' },
-            { name: 'Paolo Cruz',   position: 'SK Kagawad — Committee on Sports',       color: 'c0392b' }
-        ]
-    },
-    'santo-nino': {
-        name: 'Barangay Santo Niño',
-        officials: [
-            { name: 'Angelo Reyes', position: 'SK Chairperson',                       color: '0d3b4f' },
-            { name: 'Kim Torres',   position: 'SK Kagawad — Committee on Health',      color: 'c0392b' }
-        ]
-    },
-    'bagong-pook': {
-        name: 'Barangay Bagong Pook',
-        officials: [
-            { name: 'Bianca Fernandez', position: 'SK Chairperson',                              color: 'c0392b' },
-            { name: 'Miguel Santiago',  position: 'SK Kagawad — Committee on Environment',        color: '0d3b4f' }
-        ]
-    },
-    'cabooan': {
-        name: 'Barangay Cabooan',
-        officials: [
-            { name: 'Carlo Mendoza',  position: 'SK Chairperson', color: '0d3b4f' },
-            { name: 'Nicole Ramirez', position: 'SK Auditor',     color: 'c0392b' }
-        ]
-    },
-    'tagumpay': {
-        name: 'Barangay Tagumpay',
-        officials: [
-            { name: 'Diana Ramos',   position: 'SK Chairperson',        color: 'c0392b' },
-            { name: 'Kevin Bautista', position: 'SK Sergeant-at-Arms',  color: '0d3b4f' }
-        ]
-    }
-};
-
-const BARANGAY_CONTACTS = {
-    'poblacion':   { name: 'Barangay Poblacion',   fbName: 'SK Poblacion Official',   fbUrl: '#', phone: '0917 123 4567', phoneHref: 'tel:+639171234567', email: 'skpoblacion@example.com' },
-    'san-isidro':  { name: 'Barangay San Isidro',  fbName: 'SK San Isidro Official',  fbUrl: '#', phone: '0918 123 4567', phoneHref: 'tel:+639181234567', email: 'sksanisidro@example.com' },
-    'santo-nino':  { name: 'Barangay Santo Niño',  fbName: 'SK Santo Niño Official',  fbUrl: '#', phone: '0919 123 4567', phoneHref: 'tel:+639191234567', email: 'sksantonino@example.com' },
-    'bagong-pook': { name: 'Barangay Bagong Pook', fbName: 'SK Bagong Pook Official', fbUrl: '#', phone: '0920 123 4567', phoneHref: 'tel:+639201234567', email: 'skbagongpook@example.com' },
-    'cabooan':     { name: 'Barangay Cabooan',     fbName: 'SK Cabooan Official',     fbUrl: '#', phone: '0921 123 4567', phoneHref: 'tel:+639211234567', email: 'skcabooan@example.com' },
-    'tagumpay':    { name: 'Barangay Tagumpay',    fbName: 'SK Tagumpay Official',    fbUrl: '#', phone: '0922 123 4567', phoneHref: 'tel:+639221234567', email: 'sktagumpay@example.com' }
-};
-
 class AboutUsController {
     constructor() {
         this.officialsListEl   = document.getElementById('officialsBarangayList');
@@ -1008,83 +954,167 @@ class AboutUsController {
         this.contactDetailEl = document.getElementById('contactDetailView');
         this.contactGridEl   = document.getElementById('contactDetailGrid');
 
+        this.barangays = []; // populated by loadBarangays()
+
         this.init();
     }
 
     init() {
-        this.renderBarangayList(
-            this.officialsListEl,
-            SK_OFFICIALS_BY_BARANGAY,
-            (key) => `${SK_OFFICIALS_BY_BARANGAY[key].officials.length} officials`,
-            (key) => this.showOfficials(key)
-        );
-
-        this.renderBarangayList(
-            this.contactListEl,
-            BARANGAY_CONTACTS,
-            () => 'Tap to view contact info',
-            (key) => this.showContact(key)
-        );
-
         document.getElementById('officialsBackBtn')?.addEventListener('click', () => this.resetView('officials'));
         document.getElementById('contactBackBtn')?.addEventListener('click', () => this.resetView('contact'));
+
+        this.loadBarangays();
+    }
+
+    async loadBarangays() {
+        this.renderLoadingList(this.officialsListEl);
+        this.renderLoadingList(this.contactListEl);
+
+        try {
+            const response = await fetch('api/get_barangays');
+            const result   = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to load barangays.');
+            }
+
+            this.barangays = result.data || [];
+
+            this.renderBarangayList(
+                this.officialsListEl,
+                () => 'View SK officials',
+                (id) => this.showOfficials(id)
+            );
+
+            this.renderBarangayList(
+                this.contactListEl,
+                () => 'View contact info',
+                (id) => this.showContact(id)
+            );
+        } catch (error) {
+            console.error('Failed to load barangays:', error);
+            this.renderErrorList(this.officialsListEl, 'Could not load barangays.');
+            this.renderErrorList(this.contactListEl, 'Could not load barangays.');
+        }
+    }
+
+    renderLoadingList(container) {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="col-12 text-center py-4">
+                <i class="fas fa-spinner fa-spin" style="color: #c0392b;"></i>
+                <span class="ms-2" style="color: #7f8c8d; font-size: 0.9rem;">Loading barangays...</span>
+            </div>`;
+    }
+
+    renderErrorList(container, message) {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="col-12 text-center py-4" style="color: #95a5a6;">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span class="ms-2" style="font-size: 0.9rem;">${message}</span>
+            </div>`;
     }
 
     // Renders the "choose a barangay" grid shared by both sub-pages.
-    renderBarangayList(container, dataSource, metaFn, onSelect) {
+    renderBarangayList(container, metaFn, onSelect) {
         if (!container) return;
 
-        container.innerHTML = Object.keys(dataSource).map(key => `
+        if (this.barangays.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-4" style="color: #95a5a6;">
+                    <span style="font-size: 0.9rem;">No barangays found.</span>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = this.barangays.map(b => `
             <div class="col-6 col-md-4">
-                <div class="barangay-select-card" data-barangay="${key}">
+                <div class="barangay-select-card" data-barangay-id="${b.barangay_id}">
                     <div class="barangay-select-icon"><i class="fas fa-map-marker-alt"></i></div>
                     <div class="barangay-select-info">
-                        <div class="barangay-select-name">${dataSource[key].name}</div>
-                        <div class="barangay-select-meta">${metaFn(key)}</div>
+                        <div class="barangay-select-name">${b.barangay_name}</div>
+                        <div class="barangay-select-meta">${metaFn(b)}</div>
                     </div>
                     <i class="fas fa-chevron-right barangay-select-chevron"></i>
                 </div>
             </div>`).join('');
 
         container.querySelectorAll('.barangay-select-card').forEach(card => {
-            card.addEventListener('click', () => onSelect(card.dataset.barangay));
+            card.addEventListener('click', () => onSelect(card.dataset.barangayId));
         });
     }
 
-    showOfficials(key) {
-        const data = SK_OFFICIALS_BY_BARANGAY[key];
-        if (!data) return;
-
-        this.officialsTitleEl.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${data.name} — SK Officials`;
-        this.officialsGridEl.innerHTML = data.officials.map(o => `
-            <div class="col-6 col-md-4 col-lg-3">
-                <div class="official-card">
-                    <div class="official-photo">
-                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(o.name)}&background=${o.color}&color=fff&size=200" alt="${o.name}">
-                    </div>
-                    <h4 class="official-name">${o.name}</h4>
-                    <p class="official-position">${o.position}</p>
-                </div>
-            </div>`).join('');
-
+    async showOfficials(barangayId) {
         this.officialsListEl.style.display   = 'none';
         this.officialsDetailEl.style.display = 'block';
+        this.officialsTitleEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading officials...`;
+        this.officialsGridEl.innerHTML = '';
         this.officialsDetailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        try {
+            const response = await fetch(`api/get_sk_officials?barangay_id=${encodeURIComponent(barangayId)}`);
+            const result   = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to load SK officials.');
+            }
+
+            const data      = result.data || {};
+            const officials = data.officials || [];
+
+            this.officialsTitleEl.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${data.barangay_name || 'Barangay'} — SK Officials`;
+
+            if (officials.length === 0) {
+                this.officialsGridEl.innerHTML = `
+                    <div class="col-12 text-center py-4" style="color: #95a5a6;">
+                        <i class="fas fa-user-slash fa-2x mb-2 d-block"></i>
+                        <span style="font-size: 0.9rem;">No SK officials on file yet for this barangay.</span>
+                    </div>`;
+                return;
+            }
+
+            this.officialsGridEl.innerHTML = officials.map(o => {
+                const fullName = `${o.first_name || ''} ${o.last_name || ''}`.trim() || 'Unnamed Official';
+                const position = o.position
+                    ? o.position.charAt(0).toUpperCase() + o.position.slice(1)
+                    : 'SK Official';
+                return `
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="official-card">
+                            <div class="official-photo">
+                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0d3b4f&color=fff&size=200" alt="${fullName}">
+                            </div>
+                            <h4 class="official-name">${fullName}</h4>
+                            <p class="official-position">${position}</p>
+                            ${o.email ? `<span class="official-barangay"><i class="fas fa-envelope"></i>${o.email}</span>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
+        } catch (error) {
+            console.error('Failed to load SK officials:', error);
+            this.officialsTitleEl.innerHTML = '';
+            this.officialsGridEl.innerHTML = `
+                <div class="col-12 text-center py-4" style="color: #95a5a6;">
+                    <span style="font-size: 0.9rem;">Could not load SK officials. Please try again.</span>
+                </div>`;
+        }
     }
 
-    showContact(key) {
-        const c = BARANGAY_CONTACTS[key];
-        if (!c) return;
+    // Contact fields (Facebook page, phone, email per barangay) aren't in
+    // the database yet -- shows a clear placeholder instead of fake data.
+    showContact(barangayId) {
+        const barangay = this.barangays.find(b => String(b.barangay_id) === String(barangayId));
+        if (!barangay) return;
 
         this.contactGridEl.innerHTML = `
             <div class="col-md-6">
                 <div class="contact-card">
-                    <h4 class="contact-barangay-name"><i class="fas fa-map-marker-alt"></i>${c.name}</h4>
-                    <ul class="contact-list">
-                        <li><i class="fab fa-facebook"></i><a href="${c.fbUrl}" target="_blank" rel="noopener">${c.fbName}</a></li>
-                        <li><i class="fas fa-phone"></i><a href="${c.phoneHref}">${c.phone}</a></li>
-                        <li><i class="fas fa-envelope"></i><a href="mailto:${c.email}">${c.email}</a></li>
-                    </ul>
+                    <h4 class="contact-barangay-name"><i class="fas fa-map-marker-alt"></i>${barangay.barangay_name}</h4>
+                    <p style="color: #95a5a6; font-size: 0.88rem; margin: 0;">
+                        <i class="fas fa-circle-info me-1"></i>
+                        Contact details for this barangay haven't been added yet.
+                    </p>
                 </div>
             </div>`;
 
